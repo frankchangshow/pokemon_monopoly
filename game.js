@@ -3,8 +3,8 @@
  * Core state machine for player turns, board movements, real-estate, cards, trading, and mortgaging.
  */
 
-import { BoardSpaces, AcademyCards, TeraRaidCards } from './assets.js?v=8';
-import { Sound } from './sound.js?v=8';
+import { BoardSpaces, AcademyCards, TeraRaidCards } from './assets.js?v=27';
+import { Sound } from './sound.js?v=27';
 
 export class GameEngine {
   constructor() {
@@ -22,6 +22,8 @@ export class GameEngine {
     this.ownership = {}; // spaceId -> playerIdx
     this.buildings = {}; // spaceId -> count (0-4: Camps, 5: Gym)
     this.mortgages = {}; // spaceId -> boolean
+    this.gameStats = this.createGameStats();
+    this.mysteryEncounterState = this.createMysteryEncounterState();
 
     // Shuffle decks
     this.shuffleDeck(this.academyDeck);
@@ -36,6 +38,7 @@ export class GameEngine {
         name: humanName || "Trainer",
         pokemon: starterPokemon,
         baseStarter: starterPokemon,
+        starterBase: starterPokemon,
         level: 1,
         evolveStage: 0,
         cash: 1500,
@@ -47,10 +50,16 @@ export class GameEngine {
         isBankrupt: false,
         color: "#E74C3C", // Red
         collection: [],
+        collectionMeta: [],
+        lockedCollectionPokemon: [],
         powerUpgrades: 0,
+        partnerMoves: null,
+        partnerMoveSets: {},
         evolutionUpgrades: 0,
         bonusLevels: 0,
         pokemonLevelUps: {},
+        pokemonBonusLevels: {},
+        pokemonEvolutionStages: {},
         passedGo: false
       },
       {
@@ -58,6 +67,7 @@ export class GameEngine {
         name: "Rival Nemona",
         pokemon: this.getRandomRivalPokemon(starterPokemon, 0),
         baseStarter: this.getRandomRivalPokemon(starterPokemon, 0),
+        starterBase: this.getRandomRivalPokemon(starterPokemon, 0),
         level: 1,
         evolveStage: 0,
         cash: 1500,
@@ -69,10 +79,16 @@ export class GameEngine {
         isBankrupt: false,
         color: "#F1C40F", // Yellow
         collection: [],
+        collectionMeta: [],
+        lockedCollectionPokemon: [],
         powerUpgrades: 0,
+        partnerMoves: null,
+        partnerMoveSets: {},
         evolutionUpgrades: 0,
         bonusLevels: 0,
         pokemonLevelUps: {},
+        pokemonBonusLevels: {},
+        pokemonEvolutionStages: {},
         passedGo: false
       },
       {
@@ -80,6 +96,7 @@ export class GameEngine {
         name: "Director Clavell",
         pokemon: this.getRandomRivalPokemon(starterPokemon, 1),
         baseStarter: this.getRandomRivalPokemon(starterPokemon, 1),
+        starterBase: this.getRandomRivalPokemon(starterPokemon, 1),
         level: 1,
         evolveStage: 0,
         cash: 1500,
@@ -91,10 +108,16 @@ export class GameEngine {
         isBankrupt: false,
         color: "#3498DB", // Blue
         collection: [],
+        collectionMeta: [],
+        lockedCollectionPokemon: [],
         powerUpgrades: 0,
+        partnerMoves: null,
+        partnerMoveSets: {},
         evolutionUpgrades: 0,
         bonusLevels: 0,
         pokemonLevelUps: {},
+        pokemonBonusLevels: {},
+        pokemonEvolutionStages: {},
         passedGo: false
       },
       {
@@ -102,6 +125,7 @@ export class GameEngine {
         name: "Penny",
         pokemon: this.getRandomRivalPokemon(starterPokemon, 2),
         baseStarter: this.getRandomRivalPokemon(starterPokemon, 2),
+        starterBase: this.getRandomRivalPokemon(starterPokemon, 2),
         level: 1,
         evolveStage: 0,
         cash: 1500,
@@ -113,10 +137,16 @@ export class GameEngine {
         isBankrupt: false,
         color: "#8E44AD", // Purple
         collection: [],
+        collectionMeta: [],
+        lockedCollectionPokemon: [],
         powerUpgrades: 0,
+        partnerMoves: null,
+        partnerMoveSets: {},
         evolutionUpgrades: 0,
         bonusLevels: 0,
         pokemonLevelUps: {},
+        pokemonBonusLevels: {},
+        pokemonEvolutionStages: {},
         passedGo: false
       }
     ];
@@ -128,9 +158,85 @@ export class GameEngine {
     this.ownership = {};
     this.buildings = {};
     this.mortgages = {};
+    this.gameStats = this.createGameStats();
+    this.mysteryEncounterState = this.createMysteryEncounterState();
+    this.players.forEach(player => {
+      this.gameStats.passesGoByPlayer[player.id] = 0;
+    });
 
     this.log("Game started! Good luck on your treasure hunt in Paldea!");
     Sound.playClick();
+  }
+
+  createGameStats() {
+    const now = Date.now();
+    return {
+      startedAt: now,
+      lastLoadedAt: now,
+      totalPlayMs: 0,
+      turnsCompleted: 0,
+      totalPassesGo: 0,
+      passesGoByPlayer: {},
+      finishedAt: null,
+      winnerIdx: null
+    };
+  }
+
+  createMysteryEncounterState() {
+    return {
+      sinceLastEncounter: 0,
+      totalMysteryEncounters: 0,
+      shinyEncounters: 0,
+      rareCaught: 0
+    };
+  }
+
+  normalizeMysteryEncounterState(state = {}) {
+    return {
+      sinceLastEncounter: Number.isFinite(state.sinceLastEncounter) ? state.sinceLastEncounter : 0,
+      totalMysteryEncounters: Number.isFinite(state.totalMysteryEncounters) ? state.totalMysteryEncounters : 0,
+      shinyEncounters: Number.isFinite(state.shinyEncounters) ? state.shinyEncounters : 0,
+      rareCaught: Number.isFinite(state.rareCaught) ? state.rareCaught : 0
+    };
+  }
+
+  normalizeCollectionMeta(player) {
+    if (!player) return;
+    if (!Array.isArray(player.collection)) player.collection = [];
+    if (!Array.isArray(player.collectionMeta)) player.collectionMeta = [];
+    while (player.collectionMeta.length < player.collection.length) {
+      player.collectionMeta.push(null);
+    }
+    if (player.collectionMeta.length > player.collection.length) {
+      player.collectionMeta = player.collectionMeta.slice(0, player.collection.length);
+    }
+  }
+
+  normalizeGameStats(stats = {}) {
+    const now = Date.now();
+    return {
+      startedAt: Number.isFinite(stats.startedAt) ? stats.startedAt : now,
+      lastLoadedAt: now,
+      totalPlayMs: Number.isFinite(stats.totalPlayMs) ? stats.totalPlayMs : 0,
+      turnsCompleted: Number.isFinite(stats.turnsCompleted) ? stats.turnsCompleted : 0,
+      totalPassesGo: Number.isFinite(stats.totalPassesGo) ? stats.totalPassesGo : 0,
+      passesGoByPlayer: { ...(stats.passesGoByPlayer || {}) },
+      finishedAt: Number.isFinite(stats.finishedAt) ? stats.finishedAt : null,
+      winnerIdx: Number.isInteger(stats.winnerIdx) ? stats.winnerIdx : null
+    };
+  }
+
+  getCurrentPlayMs() {
+    if (!this.gameStats) this.gameStats = this.createGameStats();
+    const sessionMs = this.gameStats.finishedAt ? 0 : Math.max(0, Date.now() - (this.gameStats.lastLoadedAt || Date.now()));
+    return (this.gameStats.totalPlayMs || 0) + sessionMs;
+  }
+
+  snapshotGameStats() {
+    const stats = this.normalizeGameStats(this.gameStats);
+    stats.totalPlayMs = this.getCurrentPlayMs();
+    stats.lastLoadedAt = Date.now();
+    return stats;
   }
 
   serializeState() {
@@ -146,7 +252,9 @@ export class GameEngine {
       hasRolledThisTurn: this.hasRolledThisTurn,
       ownership: { ...this.ownership },
       buildings: { ...this.buildings },
-      mortgages: { ...this.mortgages }
+      mortgages: { ...this.mortgages },
+      gameStats: this.snapshotGameStats(),
+      mysteryEncounterState: { ...(this.mysteryEncounterState || this.createMysteryEncounterState()) }
     };
   }
 
@@ -158,13 +266,19 @@ export class GameEngine {
     this.players = JSON.parse(JSON.stringify(state.players)).map((player) => ({
       jailFreeCards: 0,
       collection: [],
+      collectionMeta: [],
+      lockedCollectionPokemon: [],
       powerUpgrades: 0,
+      partnerMoves: null,
+      partnerMoveSets: {},
       evolutionUpgrades: 0,
       bonusLevels: 0,
       pokemonLevelUps: {},
+      pokemonBonusLevels: {},
+      pokemonEvolutionStages: {},
       passedGo: false,
       ...player
-    }));
+    })).map((player) => this.ensurePokemonProgress(player));
     this.currentPlayerIdx = Number.isInteger(state.currentPlayerIdx) ? state.currentPlayerIdx : 0;
     this.spaces = JSON.parse(JSON.stringify(state.spaces || BoardSpaces));
     this.academyDeck = JSON.parse(JSON.stringify(state.academyDeck || AcademyCards));
@@ -176,6 +290,14 @@ export class GameEngine {
     this.ownership = { ...(state.ownership || {}) };
     this.buildings = { ...(state.buildings || {}) };
     this.mortgages = { ...(state.mortgages || {}) };
+    this.gameStats = this.normalizeGameStats(state.gameStats);
+    this.mysteryEncounterState = this.normalizeMysteryEncounterState(state.mysteryEncounterState);
+    this.players.forEach(player => {
+      this.normalizeCollectionMeta(player);
+      if (!Number.isFinite(this.gameStats.passesGoByPlayer[player.id])) {
+        this.gameStats.passesGoByPlayer[player.id] = 0;
+      }
+    });
   }
 
   getRandomRivalPokemon(starter, offset) {
@@ -186,66 +308,26 @@ export class GameEngine {
   recalculatePlayerStats(playerIdx) {
     const player = this.players[playerIdx];
     if (!player || player.isBankrupt) return;
-
-    let totalCamps = 0;
-    let totalGyms = 0;
-
-    this.spaces.forEach(s => {
-      if (this.ownership[s.id] === playerIdx) {
-        const bCount = this.buildings[s.id] || 0;
-        if (bCount === 5) {
-          totalGyms++;
-        } else {
-          totalCamps += bCount;
-        }
-      }
-    });
+    this.ensurePokemonProgress(player);
 
     const oldLevel = player.level;
     const oldPokemon = player.pokemon;
+    const activeBase = this.normalizePokemonName(player, player.pokemon);
+    const chain = this.getEvolutionChain(activeBase);
 
-    // Level formula: 1 + camps + gyms * 3 + bonusLevels from trades + level ups from passing GO
-    const starterLevelUps = player.pokemonLevelUps ? (player.pokemonLevelUps[player.baseStarter] || 0) : 0;
-    player.level = 1 + totalCamps + (totalGyms * 3) + (player.bonusLevels || 0) + starterLevelUps;
-
-    // Evolution logic based on total Gyms owned + evolutionUpgrades from trades
-    const baseStage = (totalGyms >= 3) ? 2 : ((totalGyms >= 1) ? 1 : 0);
-    const finalStage = Math.min(2, baseStage + (player.evolutionUpgrades || 0));
-    player.evolveStage = finalStage;
-
-    if (player.baseStarter === "Sprigatito") {
-      if (finalStage === 2) {
-        player.pokemon = "Meowscarada";
-      } else if (finalStage === 1) {
-        player.pokemon = "Floragato";
-      } else {
-        player.pokemon = "Sprigatito";
-      }
-    } else if (player.baseStarter === "Fuecoco") {
-      if (finalStage === 2) {
-        player.pokemon = "Skeledirge";
-      } else if (finalStage === 1) {
-        player.pokemon = "Crocalor";
-      } else {
-        player.pokemon = "Fuecoco";
-      }
-    } else if (player.baseStarter === "Quaxly") {
-      if (finalStage === 2) {
-        player.pokemon = "Quaquaval";
-      } else if (finalStage === 1) {
-        player.pokemon = "Quaxwell";
-      } else {
-        player.pokemon = "Quaxly";
-      }
-    } else if (player.baseStarter === "Pawmi") {
-      if (finalStage === 2) {
-        player.pokemon = "Pawmot";
-      } else if (finalStage === 1) {
-        player.pokemon = "Pawmo";
-      } else {
-        player.pokemon = "Pawmi";
-      }
+    if (chain) {
+      const savedStage = Number.isInteger(player.pokemonEvolutionStages[activeBase])
+        ? player.pokemonEvolutionStages[activeBase]
+        : Math.max(0, chain.indexOf(player.pokemon));
+      const finalStage = Math.max(0, Math.min(savedStage, chain.length - 1));
+      player.pokemonEvolutionStages[activeBase] = finalStage;
+      player.evolveStage = finalStage;
+      player.pokemon = chain[finalStage];
+    } else {
+      player.evolveStage = 0;
     }
+    player.baseStarter = activeBase;
+    player.level = this.getPokemonLevel(player, player.pokemon);
 
     if (player.level !== oldLevel) {
       this.log(`📈 ${player.name}'s partner Level increased to Lv. ${player.level}!`);
@@ -283,6 +365,10 @@ export class GameEngine {
 
     this.doubleRollCount = 0;
     this.hasRolledThisTurn = false;
+    if (!this.gameStats) this.gameStats = this.createGameStats();
+    this.gameStats.turnsCompleted = (this.gameStats.turnsCompleted || 0) + 1;
+    if (!this.mysteryEncounterState) this.mysteryEncounterState = this.createMysteryEncounterState();
+    this.mysteryEncounterState.sinceLastEncounter = (this.mysteryEncounterState.sinceLastEncounter || 0) + 1;
     
     // Find next active player
     let count = 0;
@@ -357,6 +443,9 @@ export class GameEngine {
     if (newPos < oldPos && steps > 0) {
       player.cash += 200;
       player.passedGo = true;
+      if (!this.gameStats) this.gameStats = this.createGameStats();
+      this.gameStats.totalPassesGo = (this.gameStats.totalPassesGo || 0) + 1;
+      this.gameStats.passesGoByPlayer[player.id] = (this.gameStats.passesGoByPlayer[player.id] || 0) + 1;
       this.log(`${player.name} passed GO and collected ₽200!`);
     }
 
@@ -470,6 +559,9 @@ export class GameEngine {
     const payee = this.players[payeeIdx];
     const ownerIdx = this.ownership[spaceId];
     const owner = this.players[ownerIdx];
+    if (!payee || !owner || payeeIdx === ownerIdx) {
+      return { success: false, rent: 0 };
+    }
     
     let rent = this.calculateRent(spaceId);
     
@@ -484,14 +576,11 @@ export class GameEngine {
       this.log(`Battle penalty applied! Rent increased to ${multiplier}x.`);
     }
 
-    if (payee.cash >= rent) {
-      payee.cash -= rent;
-      owner.cash += rent;
-      this.log(`${payee.name} paid ₽${rent} rent to ${owner.name} for ${this.spaces[spaceId].name}.`);
-      return { success: true, rent };
-    }
+    payee.cash -= rent;
+    owner.cash += rent;
+    this.log(`${payee.name} paid ₽${rent} rent to ${owner.name} for ${this.spaces[spaceId].name}.`);
     
-    return { success: false, rent }; // Triggers mortgage/bankruptcy menu
+    return { success: payee.cash >= 0, rent }; // Negative cash triggers mortgage/bankruptcy menu
   }
 
   // Get user-friendly explanation of why a property can or cannot be upgraded
@@ -814,15 +903,26 @@ export class GameEngine {
     }
   }
 
+  getActivePlayers() {
+    return this.players.filter(player => !player.isBankrupt);
+  }
+
+  getWinner() {
+    const activePlayers = this.getActivePlayers();
+    return activePlayers.length === 1 ? activePlayers[0] : null;
+  }
+
+  markFinished(winnerIdx) {
+    if (!this.gameStats) this.gameStats = this.createGameStats();
+    if (this.gameStats.finishedAt) return;
+    this.gameStats.totalPlayMs = this.getCurrentPlayMs();
+    this.gameStats.finishedAt = Date.now();
+    this.gameStats.winnerIdx = winnerIdx;
+  }
+
   normalizePokemonName(player, pokemonName) {
     if (!player) return pokemonName;
-    const starterEvos = {
-      "Sprigatito": ["Sprigatito", "Floragato", "Meowscarada"],
-      "Fuecoco": ["Fuecoco", "Crocalor", "Skeledirge"],
-      "Quaxly": ["Quaxly", "Quaxwell", "Quaquaval"],
-      "Pawmi": ["Pawmi", "Pawmo", "Pawmot"]
-    };
-    for (const [baseStarter, evos] of Object.entries(starterEvos)) {
+    for (const [baseStarter, evos] of Object.entries(this.getEvolutionChains())) {
       if (evos.includes(pokemonName)) {
         return baseStarter; // map evolutions back to base starter name
       }
@@ -830,23 +930,55 @@ export class GameEngine {
     return pokemonName;
   }
 
+  getEvolutionChains() {
+    return {
+      "Sprigatito": ["Sprigatito", "Floragato", "Meowscarada"],
+      "Fuecoco": ["Fuecoco", "Crocalor", "Skeledirge"],
+      "Quaxly": ["Quaxly", "Quaxwell", "Quaquaval"],
+      "Pawmi": ["Pawmi", "Pawmo", "Pawmot"],
+      "Tinkatink": ["Tinkatink", "Tinkaton"],
+      "Charcadet": ["Charcadet", "Ceruledge"]
+    };
+  }
+
+  getEvolutionChain(basePokemon) {
+    return this.getEvolutionChains()[basePokemon] || null;
+  }
+
+  ensurePokemonProgress(player) {
+    if (!player) return player;
+    if (!player.pokemonLevelUps) player.pokemonLevelUps = {};
+    if (!player.pokemonBonusLevels) player.pokemonBonusLevels = {};
+    if (!player.pokemonEvolutionStages) player.pokemonEvolutionStages = {};
+    if (!player.starterBase) player.starterBase = player.baseStarter || this.normalizePokemonName(player, player.pokemon);
+
+    const activeBase = this.normalizePokemonName(player, player.pokemon);
+    const chain = this.getEvolutionChain(activeBase);
+    if (chain && !Number.isInteger(player.pokemonEvolutionStages[activeBase])) {
+      const currentStage = Math.max(0, chain.indexOf(player.pokemon));
+      const legacyStage = Number.isInteger(player.evolutionUpgrades) ? player.evolutionUpgrades : 0;
+      player.pokemonEvolutionStages[activeBase] = Math.min(Math.max(currentStage, legacyStage), chain.length - 1);
+    }
+    if ((player.bonusLevels || 0) > 0 && !Object.prototype.hasOwnProperty.call(player.pokemonBonusLevels, activeBase)) {
+      player.pokemonBonusLevels[activeBase] = player.bonusLevels;
+    }
+    return player;
+  }
+
+  getPokemonBaseLevel(player, pokemonName) {
+    const normName = this.normalizePokemonName(player, pokemonName);
+    if (normName === player.starterBase) return 1;
+    const space = this.spaces.find(s => this.normalizePokemonName(player, s.pokemon) === normName);
+    return space ? Math.max(1, Math.floor(space.cost / 60)) : 1;
+  }
+
   getPokemonLevel(player, pokemonName) {
     if (!player) return 1;
+    this.ensurePokemonProgress(player);
     const normName = this.normalizePokemonName(player, pokemonName);
-    
-    // Check if starter
-    if (normName === player.baseStarter) {
-      return player.level; // already includes camps, gyms, trades, and GO boosts
-    }
-    
-    // Caught pokemon
-    let baseLvl = 1;
-    const space = this.spaces.find(s => s.pokemon === pokemonName);
-    if (space) {
-      baseLvl = Math.max(1, Math.floor(space.cost / 60));
-    }
     const levelUps = player.pokemonLevelUps ? (player.pokemonLevelUps[normName] || 0) : 0;
-    return baseLvl + levelUps;
+    const bonusLevels = player.pokemonBonusLevels ? (player.pokemonBonusLevels[normName] || 0) : 0;
+    return this.getPokemonBaseLevel(player, pokemonName) + levelUps + bonusLevels;
   }
 
   degradeProperty(spaceId) {
@@ -878,7 +1010,17 @@ export class GameEngine {
     if (oldOwnerIdx !== undefined && oldOwnerIdx !== null) {
       const oldOwner = this.players[oldOwnerIdx];
       if (oldOwner && oldOwner.collection) {
-        oldOwner.collection = oldOwner.collection.filter(p => p !== pokemonName);
+        this.normalizeCollectionMeta(oldOwner);
+        const keptCollection = [];
+        const keptMeta = [];
+        oldOwner.collection.forEach((p, idx) => {
+          if (p !== pokemonName) {
+            keptCollection.push(p);
+            keptMeta.push(oldOwner.collectionMeta[idx] || null);
+          }
+        });
+        oldOwner.collection = keptCollection;
+        oldOwner.collectionMeta = keptMeta;
       }
       this.recalculatePlayerStats(oldOwnerIdx);
     }
@@ -888,8 +1030,10 @@ export class GameEngine {
       const newOwner = this.players[newOwnerIdx];
       if (newOwner) {
         if (!newOwner.collection) newOwner.collection = [];
+        this.normalizeCollectionMeta(newOwner);
         if (!newOwner.collection.includes(pokemonName)) {
           newOwner.collection.push(pokemonName);
+          newOwner.collectionMeta.push(null);
         }
       }
       this.recalculatePlayerStats(newOwnerIdx);

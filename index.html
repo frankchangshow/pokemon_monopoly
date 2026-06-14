@@ -4,12 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pokémon Monopoly: Paldea Edition</title>
-  <link rel="stylesheet" href="index.css?v=8">
+  <link rel="stylesheet" href="index.css?v=27">
 </head>
 <body>
 
   <!-- Background Sound Mute/Unmute Icon -->
   <div class="mute-toggle" id="mute-btn" title="Toggle Mute">🔊</div>
+  <div class="utility-menu-container" id="utility-menu-container" style="display: none;">
+    <div class="utility-popup-menu" id="utility-popup-menu" style="display: none;">
+      <button class="menu-item btn-save" id="save-game-btn">💾 Save</button>
+      <button class="menu-item btn-save" id="load-game-btn">📂 Load</button>
+      <button class="menu-item btn-build" id="build-btn">🔺 Upgrade</button>
+      <button class="menu-item btn-mortgage" id="manage-assets-btn">💼 Deeds</button>
+    </div>
+    <button class="btn-utility-toggle" id="utility-menu-btn" title="Game Menu">⚙️</button>
+  </div>
+
+  <!-- VICTORY CELEBRATION -->
+  <div class="victory-overlay" id="victory-overlay" style="display: none;">
+    <div class="victory-confetti" id="victory-confetti"></div>
+    <div class="victory-balloon balloon-one">🎈</div>
+    <div class="victory-balloon balloon-two">🎈</div>
+    <div class="victory-balloon balloon-three">🎈</div>
+    <div class="victory-card">
+      <div class="victory-cheer">👏 🎉 👏</div>
+      <div class="victory-title">YOU WON!!!</div>
+      <div class="victory-subtitle" id="victory-subtitle">You are the Paldea Monopoly Champion!</div>
+      <div class="victory-partner" id="victory-partner"></div>
+      <div class="victory-summary-grid" id="victory-summary-grid"></div>
+      <div class="victory-defeated" id="victory-defeated"></div>
+      <button class="btn-comic victory-new-game" id="victory-new-game-btn">PLAY AGAIN</button>
+    </div>
+  </div>
 
   <!-- SETUP SCREEN (Select Starter) -->
   <div class="setup-screen" id="setup-screen">
@@ -110,16 +136,6 @@
               <button class="btn-comic btn-roll" id="roll-dice-btn">ROLL DICE</button>
               <button class="btn-comic btn-buy" id="buy-prop-btn" style="display: none;">BUY PROPERTY</button>
               <button class="btn-comic btn-end" id="end-turn-btn" style="display: none;">END TURN</button>
-            </div>
-
-            <!-- Pop-up Utility Menu (lower right corner) -->
-            <div class="utility-menu-container" id="utility-menu-container" style="display: none;">
-              <div class="utility-popup-menu" id="utility-popup-menu" style="display: none;">
-                <button class="menu-item btn-save" id="save-game-btn">💾 Save</button>
-                <button class="menu-item btn-build" id="build-btn">🔺 Upgrade</button>
-                <button class="menu-item btn-mortgage" id="manage-assets-btn">💼 Deeds</button>
-              </div>
-              <button class="btn-utility-toggle" id="utility-menu-btn" title="Turn Options">⚙️</button>
             </div>
           </div>
         </div>
@@ -334,6 +350,6 @@
   </div>
 
   <!-- Core Javascript code -->
-  <script type="module" src="ui.js?v=8"></script>
+  <script type="module" src="ui.js?v=27"></script>
 </body>
 </html>

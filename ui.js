@@ -3,10 +3,10 @@
  * Integrates assets, sounds, Monopoly engine, and Battle engine to render a dynamic comic-book game.
  */
 
-import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=8';
-import { Sound } from './sound.js?v=8';
-import { GameEngine } from './game.js?v=8';
-import { Battle } from './battle.js?v=8';
+import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=27';
+import { Sound } from './sound.js?v=27';
+import { GameEngine } from './game.js?v=27';
+import { Battle } from './battle.js?v=27';
 
 window.Battle = Battle;
 
@@ -22,6 +22,34 @@ const AVAILABLE_PNGS = [
   "tera_raid_chest", "academy_class", "poke_mart_tax", "league_assessment_tax"
 ];
 
+const SAVE_STORAGE_KEY = "pokemonMonopolySaveSlotsV1";
+const SAVE_SLOT_COUNT = 3;
+const MYSTERY_CATCH_SPACE_ID = "__mystery__";
+const MYSTERY_POKEMON_POOL = [
+  { name: "Palafin", title: "HERO SURF SURPRISE!", rarity: "Rare", cost: 260, trigger: "water" },
+  { name: "Baxcalibur", title: "ICE DRAGON RUMBLE!", rarity: "Ultra Rare", cost: 360, trigger: "late" },
+  { name: "Gholdengo", title: "GOLDEN COIN GHOST!", rarity: "Ultra Rare", cost: 380, trigger: "money" },
+  { name: "Kingambit", title: "CHECKMATE CHALLENGE!", rarity: "Rare", cost: 340, trigger: "battle" },
+  { name: "Annihilape", title: "RAGE FROM BEYOND!", rarity: "Rare", cost: 320, trigger: "loss" },
+  { name: "Clodsire", title: "MUDDY PALDEA FRIEND!", rarity: "Rare", cost: 250, trigger: "desert" },
+  { name: "Cyclizar", title: "ROAMING ROADSTER!", rarity: "Rare", cost: 280, trigger: "travel" },
+  { name: "Flamigo", title: "FLYING FLOCK FLASH!", rarity: "Rare", cost: 240, trigger: "travel" },
+  { name: "Glimmora", title: "AREA ZERO CRYSTAL!", rarity: "Ultra Rare", cost: 360, trigger: "raid" },
+  { name: "Farigiraf", title: "TWIN-MIND OMEN!", rarity: "Rare", cost: 260, trigger: "academy" },
+  { name: "Dudunsparce", title: "ODD LITTLE LEGEND!", rarity: "Rare", cost: 220, trigger: "weird" },
+  { name: "Maushold", title: "FAMILY SWARM EVENT!", rarity: "Rare", cost: 240, trigger: "swarm" }
+];
+const MYSTERY_QUIRKS = [
+  { name: "Lucky", text: "+₽50 when you catch it.", cashBonus: 50 },
+  { name: "Brave", text: "Starts battles with +1 saved level.", levelBonus: 1 },
+  { name: "Swift", text: "Fast nature: +1 saved level.", levelBonus: 1 },
+  { name: "Guardian", text: "Great for defending property.", defenseBonus: 1 },
+  { name: "Greedy", text: "+₽100 when you catch it.", cashBonus: 100 },
+  { name: "Tera-born", text: "Carries a Tera sparkle badge.", teraBorn: true },
+  { name: "Collector", text: "Raises the next mystery odds.", pityBonus: 2 },
+  { name: "Stubborn", text: "Rare collection trophy trait.", trophy: true }
+];
+
 class UIManager {
   constructor() {
     this.game = new GameEngine();
@@ -33,6 +61,7 @@ class UIManager {
     this.activePassHandler = null;
     this.prevPlayerTera = false;
     this.prevEnemyTera = false;
+    this.victoryShown = false;
 
     // DOM Elements Cache
     this.setupScreen = document.getElementById("setup-screen");
@@ -46,7 +75,10 @@ class UIManager {
     this.buyBtn = document.getElementById("buy-prop-btn");
     this.buildBtn = document.getElementById("build-btn");
     this.manageBtn = document.getElementById("manage-assets-btn");
+    this.saveGameBtn = document.getElementById("save-game-btn");
+    this.loadGameBtn = document.getElementById("load-game-btn");
     this.endBtn = document.getElementById("end-turn-btn");
+    this.actionBox = document.querySelector(".action-box");
     
     this.die1 = document.getElementById("die-1");
     this.die2 = document.getElementById("die-2");
@@ -54,6 +86,13 @@ class UIManager {
     this.dashboardUtilities = document.getElementById("utility-menu-container");
     this.utilityPopupMenu = document.getElementById("utility-popup-menu");
     this.utilityMenuBtn = document.getElementById("utility-menu-btn");
+    this.victoryOverlay = document.getElementById("victory-overlay");
+    this.victoryConfetti = document.getElementById("victory-confetti");
+    this.victorySubtitle = document.getElementById("victory-subtitle");
+    this.victoryPartner = document.getElementById("victory-partner");
+    this.victorySummaryGrid = document.getElementById("victory-summary-grid");
+    this.victoryDefeated = document.getElementById("victory-defeated");
+    this.victoryNewGameBtn = document.getElementById("victory-new-game-btn");
     
     // Encounter Sprite Elements
     this.encounterSpriteBox = document.getElementById("encounter-sprite-box");
@@ -100,6 +139,14 @@ class UIManager {
     this.cardDrawText = document.getElementById("card-draw-text");
     this.cardDrawOkBtn = document.getElementById("card-draw-ok-btn");
 
+    // Save / Load DOM
+    this.setupSaveSlots = document.getElementById("setup-save-slots");
+    this.saveOverlay = document.getElementById("save-overlay");
+    this.modalSaveSlots = document.getElementById("modal-save-slots");
+    this.saveModalTitle = document.getElementById("save-modal-title");
+    this.saveCloseBtn = document.getElementById("save-close-btn");
+    this.saveOverlayMode = "save";
+
     // Catch mini-game DOM
     this.catchOverlay = document.getElementById("catch-overlay");
     this.catchPokemonSprite = document.getElementById("catch-pokemon-sprite");
@@ -144,6 +191,7 @@ class UIManager {
     this.catchGameType = "circle"; // circle, bar, spam, qte
     this.hasCatchGameStarted = false;
     this.ballCostPaid = false;
+    this.pendingCatchQuality = "Miss";
 
     // Sliding Bar state
     this.sliderProgress = 0;
@@ -163,12 +211,36 @@ class UIManager {
 
   init() {
     this.renderStarterPreviews();
+    this.renderSaveSlots();
+    this.removeCenterSaveLoadControls();
+    this.observeActionBoxForLegacySaveLoadControls();
     this.setupEventListeners();
 
     // Bind battle callback for combat animations & chiptune audio
     Battle.onMoveExecuted = (attacker, defender, move, effectiveness, damage) => {
       this.animateCombatMove(attacker, defender, move, effectiveness, damage);
     };
+  }
+
+  removeCenterSaveLoadControls() {
+    if (!this.actionBox) return;
+    const legacyButtons = this.actionBox.querySelectorAll("#quick-save-game-btn, #quick-load-game-btn, .btn-save-action, .btn-load-action");
+    legacyButtons.forEach(button => button.remove());
+
+    this.actionBox.querySelectorAll("button").forEach(button => {
+      const label = button.innerText.trim().toUpperCase();
+      if (label === "SAVE" || label === "LOAD") {
+        button.remove();
+      }
+    });
+  }
+
+  observeActionBoxForLegacySaveLoadControls() {
+    if (!this.actionBox || this.actionBoxSaveLoadObserver) return;
+    this.actionBoxSaveLoadObserver = new MutationObserver(() => {
+      this.removeCenterSaveLoadControls();
+    });
+    this.actionBoxSaveLoadObserver.observe(this.actionBox, { childList: true, subtree: true });
   }
 
   renderStarterPreviews() {
@@ -195,6 +267,8 @@ class UIManager {
       const name = document.getElementById("trainer-name-input").value.trim() || "Florian";
       Battle.reset();
       this.game.initGame(name, this.selectedStarter);
+      this.victoryShown = false;
+      if (this.victoryOverlay) this.victoryOverlay.style.display = "none";
       
       this.setupScreen.style.display = "none";
       this.gameContainer.style.display = "grid";
@@ -250,7 +324,19 @@ class UIManager {
       const space = this.game.spaces[pos];
       
       const discount = this.currentWildDiscount || 0;
-      this.game.buyProperty(player.id, pos, discount);
+      const purchaseCost = Math.floor(space.cost * (1 - discount / 100));
+      const bought = this.game.buyProperty(player.id, pos, discount);
+      if (!bought) {
+        this.setDialogText(`Not enough money to buy ${space.name}. It costs ₽${purchaseCost}, but you only have ₽${player.cash}.`);
+        this.game.log(`${player.name} could not afford ${space.name} (cost ₽${purchaseCost}, cash ₽${player.cash}).`);
+        this.buyBtn.innerText = discount > 0 ? `CLAIM FREE (₽${purchaseCost})` : `BUY AT FULL (₽${space.cost})`;
+        this.buyBtn.style.display = "inline-block";
+        this.endBtn.innerText = "END TURN";
+        this.endBtn.style.display = "inline-block";
+        this.updateUI();
+        this.buyBtn.style.display = "inline-block";
+        return;
+      }
       this.currentWildDiscount = 0;
       
       this.buyBtn.style.display = "none";
@@ -270,8 +356,11 @@ class UIManager {
         this.endBtn.innerText = "END TURN";
       }
 
-      this.setDialogText(`You bought ${space.name} (${space.pokemon}) for ₽${space.cost}!`);
+      this.setDialogText(`You bought ${space.name} (${space.pokemon}) for ₽${purchaseCost}!`);
       this.updateUI();
+      this.maybeTriggerMysteryEncounter(player, "propertyClaim", () => {
+        this.endBtn.style.display = "inline-block";
+      });
     });
 
     // Upgrade Buildings (Camps/Gyms)
@@ -284,6 +373,16 @@ class UIManager {
     this.manageBtn.addEventListener("click", () => {
       Sound.playClick();
       this.showDeedsManagerModal("mortgage");
+    });
+
+    this.saveGameBtn.addEventListener("click", () => {
+      Sound.playClick();
+      this.showSaveOverlay("save");
+    });
+
+    this.loadGameBtn.addEventListener("click", () => {
+      Sound.playClick();
+      this.showSaveOverlay("load");
     });
 
     // Toggle utility popup menu
@@ -301,6 +400,30 @@ class UIManager {
 
       this.utilityPopupMenu.addEventListener("click", (e) => {
         e.stopPropagation();
+      });
+    }
+
+    if (this.setupSaveSlots) {
+      this.setupSaveSlots.addEventListener("click", (e) => this.handleSaveSlotClick(e, "setup"));
+    }
+
+    if (this.modalSaveSlots) {
+      this.modalSaveSlots.addEventListener("click", (e) => this.handleSaveSlotClick(e, "modal"));
+    }
+
+    if (this.saveCloseBtn) {
+      this.saveCloseBtn.addEventListener("click", () => this.hideSaveOverlay());
+    }
+
+    if (this.saveOverlay) {
+      this.saveOverlay.addEventListener("click", (e) => {
+        if (e.target === this.saveOverlay) this.hideSaveOverlay();
+      });
+    }
+
+    if (this.victoryNewGameBtn) {
+      this.victoryNewGameBtn.addEventListener("click", () => {
+        window.location.reload();
       });
     }
 
@@ -408,6 +531,275 @@ class UIManager {
         }
       });
     });
+  }
+
+  getSaveSlots() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(SAVE_STORAGE_KEY) || "[]");
+      const slots = Array.isArray(parsed) ? parsed : [];
+      return Array.from({ length: SAVE_SLOT_COUNT }, (_, idx) => slots[idx] || null);
+    } catch (err) {
+      console.warn("Unable to read save slots:", err);
+      return Array.from({ length: SAVE_SLOT_COUNT }, () => null);
+    }
+  }
+
+  writeSaveSlots(slots) {
+    localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(slots.slice(0, SAVE_SLOT_COUNT)));
+  }
+
+  renderSaveSlots() {
+    if (this.setupSaveSlots) {
+      this.setupSaveSlots.innerHTML = this.renderSaveSlotCards("setup");
+    }
+    if (this.modalSaveSlots) {
+      this.modalSaveSlots.innerHTML = this.renderSaveSlotCards(this.saveOverlayMode);
+    }
+  }
+
+  renderSaveSlotCards(mode) {
+    const slots = this.getSaveSlots();
+    return slots.map((save, idx) => {
+      const slotNumber = idx + 1;
+      const isEmpty = !save;
+      const summary = save ? this.formatSaveSummary(save) : "Empty slot";
+      const timestamp = save ? this.formatSaveTimestamp(save.savedAt) : "No save file";
+      const trainerName = save ? this.escapeHTML(save.summary?.trainerName || save.summary?.activeTrainer || "Saved Game") : "Empty";
+      const loadDisabled = isEmpty ? "disabled" : "";
+      const deleteDisabled = isEmpty ? "disabled" : "";
+      const saveButton = mode === "save"
+        ? `<button class="save-action-primary ${isEmpty ? "save-action-new" : "save-action-overwrite"}" data-action="save" data-slot="${idx}">${isEmpty ? "SAVE" : "OVERWRITE"}</button>`
+        : "";
+
+      return `
+        <div class="save-slot-card ${isEmpty ? "empty" : ""}">
+          <div class="save-slot-label">Slot ${slotNumber}</div>
+          <div class="save-slot-trainer">${trainerName}</div>
+          <div class="save-slot-time">${this.escapeHTML(timestamp)}</div>
+          <div class="save-slot-summary">${summary}</div>
+          <div class="save-slot-actions">
+            ${saveButton}
+            <button class="save-action-primary save-action-load" data-action="load" data-slot="${idx}" ${loadDisabled}>LOAD</button>
+            <button class="save-action-delete" data-action="delete" data-slot="${idx}" title="Delete Slot ${slotNumber}" ${deleteDisabled}>×</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  formatSaveTimestamp(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Unknown date";
+    return date.toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    });
+  }
+
+  formatSaveSummary(save) {
+    const summary = save.summary || {};
+    const trainerLines = (summary.trainers || []).slice(0, 4).map(t => {
+      return `${this.escapeHTML(t.name)}: ${this.escapeHTML(t.pokemon)} Lv.${t.level}, ₽${t.cash}, ${t.properties} deeds`;
+    });
+    const active = summary.activeTrainer ? `Turn: ${this.escapeHTML(summary.activeTrainer)}` : "Turn: Unknown";
+    const owned = `Properties: ${summary.totalProperties || 0}`;
+    return [active, owned, ...trainerLines].join("<br>");
+  }
+
+  buildSaveSummary(state) {
+    const propertyCounts = {};
+    Object.values(state.ownership || {}).forEach(ownerIdx => {
+      propertyCounts[ownerIdx] = (propertyCounts[ownerIdx] || 0) + 1;
+    });
+
+    const active = state.players[state.currentPlayerIdx] || state.players[0];
+    const human = state.players.find(player => player.id === 0) || state.players[0];
+    return {
+      trainerName: human ? human.name : "Trainer",
+      activeTrainer: active ? active.name : "Unknown",
+      totalProperties: Object.keys(state.ownership || {}).length,
+      trainers: state.players.map(player => ({
+        id: player.id,
+        name: player.name,
+        pokemon: player.pokemon,
+        level: player.level,
+        cash: player.cash,
+        position: player.position,
+        properties: propertyCounts[player.id] || 0,
+        collection: player.collection ? player.collection.length : 0,
+        bankrupt: !!player.isBankrupt
+      }))
+    };
+  }
+
+  canSaveCurrentState() {
+    const tempIds = ["wild-battle-btn", "trainer-battle-btn", "pay-rent-btn", "accept-challenge-btn", "resolve-debt-btn"];
+    const hasTempPrompt = tempIds.some(id => !!document.getElementById(id));
+    const blockingOverlay =
+      Battle.activeBattle ||
+      this.isEncounterActive ||
+      this.activePassHandler ||
+      hasTempPrompt ||
+      this.catchOverlay.style.display !== "none" ||
+      this.cardDrawOverlay.style.display === "flex" ||
+      this.pokemonSelectionOverlay.style.display === "flex" ||
+      this.pokemonLevelupOverlay.style.display === "flex";
+
+    if (!this.game.players.length) {
+      return { ok: false, message: "Start a game before saving." };
+    }
+    if (blockingOverlay) {
+      return { ok: false, message: "Finish the current battle, catch attempt, card, or property choice before saving." };
+    }
+    return { ok: true };
+  }
+
+  saveToSlot(slotIdx) {
+    const status = this.canSaveCurrentState();
+    if (!status.ok) {
+      alert(status.message);
+      return false;
+    }
+
+    const slots = this.getSaveSlots();
+    if (slots[slotIdx] && !confirm(`Overwrite Slot ${slotIdx + 1} for ${slots[slotIdx].summary?.trainerName || "this saved game"}?`)) {
+      return false;
+    }
+
+    const state = this.game.serializeState();
+    slots[slotIdx] = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      summary: this.buildSaveSummary(state),
+      state
+    };
+    this.writeSaveSlots(slots);
+    this.renderSaveSlots();
+    this.setDialogText(`Game saved to Slot ${slotIdx + 1}.`);
+    this.game.log(`Game saved to Slot ${slotIdx + 1}.`);
+    this.updateUI();
+    return true;
+  }
+
+  loadFromSlot(slotIdx) {
+    const slots = this.getSaveSlots();
+    const save = slots[slotIdx];
+    if (!save || !save.state) return;
+
+    if (this.game.players.length && !confirm(`Load Slot ${slotIdx + 1}? Current unsaved progress will be lost.`)) {
+      return;
+    }
+
+    Battle.reset();
+    this.game.loadState(save.state);
+    this.selectedCollectionIndices = [];
+    this.currentWildDiscount = 0;
+    this.activePassHandler = null;
+    this.isEncounterActive = false;
+    this.combatAnimating = false;
+    this.victoryShown = false;
+    if (this.victoryOverlay) this.victoryOverlay.style.display = "none";
+    this.prevCash = this.game.players.map(p => p.cash);
+    this.gameSessionId = `session_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    this.closeTransientOverlays();
+
+    this.setupScreen.style.display = "none";
+    this.gameContainer.style.display = "grid";
+    this.renderBoard();
+    this.updateUI();
+    this.restoreControlsAfterLoad();
+    this.hideSaveOverlay();
+    this.renderSaveSlots();
+    this.setDialogText(`Loaded Slot ${slotIdx + 1}.`);
+  }
+
+  deleteSaveSlot(slotIdx) {
+    if (!confirm(`Delete Slot ${slotIdx + 1}?`)) return;
+    const slots = this.getSaveSlots();
+    slots[slotIdx] = null;
+    this.writeSaveSlots(slots);
+    this.renderSaveSlots();
+  }
+
+  handleSaveSlotClick(event, source) {
+    const button = event.target.closest("button[data-action]");
+    if (!button) return;
+    const slotIdx = Number(button.dataset.slot);
+    const action = button.dataset.action;
+    if (!Number.isInteger(slotIdx)) return;
+
+    Sound.playClick();
+    if (action === "save") {
+      if (this.saveToSlot(slotIdx)) this.hideSaveOverlay();
+    } else if (action === "load") {
+      this.loadFromSlot(slotIdx);
+    } else if (action === "delete") {
+      this.deleteSaveSlot(slotIdx);
+    }
+  }
+
+  showSaveOverlay(mode = "save") {
+    this.saveOverlayMode = mode;
+    if (this.saveModalTitle) {
+      this.saveModalTitle.innerText = mode === "save" ? "SAVE GAME" : "LOAD GAME";
+    }
+    this.renderSaveSlots();
+    this.saveOverlay.style.display = "flex";
+    if (this.utilityPopupMenu) this.utilityPopupMenu.style.display = "none";
+  }
+
+  hideSaveOverlay() {
+    if (this.saveOverlay) {
+      this.saveOverlay.style.display = "none";
+    }
+  }
+
+  closeTransientOverlays() {
+    this.hideEncounterSprite();
+    this.battleOverlay.style.display = "none";
+    this.catchOverlay.style.display = "none";
+    this.deedOverlay.style.display = "none";
+    this.cardDrawOverlay.style.display = "none";
+    this.pokemonSelectionOverlay.style.display = "none";
+    this.pokemonLevelupOverlay.style.display = "none";
+    ["wild-battle-btn", "trainer-battle-btn", "pay-rent-btn", "accept-challenge-btn", "resolve-debt-btn"].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) btn.remove();
+    });
+    this.endBtn.innerText = "END TURN";
+  }
+
+  restoreControlsAfterLoad() {
+    const player = this.game.getCurrentPlayer();
+    this.buyBtn.style.display = "none";
+    this.endBtn.style.display = "none";
+    this.rollBtn.style.display = "none";
+
+    if (!player || player.isBankrupt) return;
+    if (player.isAI) {
+      this.setDialogText(`Loaded during ${player.name}'s turn.`);
+      setTimeout(() => this.executeAITurn(), 1200);
+      return;
+    }
+
+    if (this.game.hasRolledThisTurn) {
+      this.endBtn.style.display = "inline-block";
+    } else {
+      this.rollBtn.style.display = "inline-block";
+    }
+  }
+
+  escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[char]);
   }
 
   // Set Dialogue text in the speech bubble
@@ -542,6 +934,25 @@ class UIManager {
     
     parent.appendChild(popup);
     setTimeout(() => popup.remove(), 800);
+  }
+
+  showCenterActionToast(text, variant = "info", host = null) {
+    const target = host || document.body;
+    const toast = document.createElement("div");
+    toast.className = `center-action-toast ${variant}`;
+    toast.innerText = text;
+    target.appendChild(toast);
+    setTimeout(() => toast.remove(), 1600);
+  }
+
+  showDamageNumber(side, damage) {
+    const parent = side === "player" ? this.playerBattleSprite : this.enemyBattleSprite;
+    if (!parent) return;
+    const damageEl = document.createElement("div");
+    damageEl.className = "damage-number-pop";
+    damageEl.innerText = `-${damage} HP`;
+    parent.appendChild(damageEl);
+    setTimeout(() => damageEl.remove(), 1100);
   }
 
   // Render the initial 40-space Monopoly grid layout
@@ -888,6 +1299,7 @@ class UIManager {
 
   // Update game board visual tokens, houses, sidebar, logs
   updateUI() {
+    this.removeCenterSaveLoadControls();
     const player = this.game.getCurrentPlayer();
     
     // Dice values
@@ -1128,7 +1540,118 @@ class UIManager {
       }
     }
 
+    this.checkForVictory();
     this.uploadLogsToServer();
+  }
+
+  checkForVictory() {
+    if (this.victoryShown || !this.game.players.length) return;
+    const winner = this.game.getWinner();
+    if (!winner || winner.id !== 0) return;
+    this.game.markFinished(winner.id);
+    this.victoryShown = true;
+    this.showVictoryScreen(winner);
+  }
+
+  showVictoryScreen(winner) {
+    if (!this.victoryOverlay) return;
+    this.rollBtn.style.display = "none";
+    this.buyBtn.style.display = "none";
+    this.endBtn.style.display = "none";
+    this.isEncounterActive = false;
+    this.hideEncounterSprite();
+    Sound.playVictory();
+
+    if (this.victorySubtitle) {
+      this.victorySubtitle.innerText = `${winner.name} conquered Paldea and eliminated every rival!`;
+    }
+    if (this.victoryPartner) {
+      this.victoryPartner.innerHTML = this.getPokemonSpriteMarkup(winner.pokemon);
+    }
+    if (this.victorySummaryGrid) {
+      this.victorySummaryGrid.innerHTML = this.buildVictorySummaryHTML(winner);
+    }
+    if (this.victoryDefeated) {
+      const defeated = this.game.players
+        .filter(player => player.id !== winner.id)
+        .map(player => `${this.escapeHTML(player.name)} (${this.escapeHTML(player.pokemon)})`)
+        .join(" • ");
+      this.victoryDefeated.innerHTML = `<strong>Defeated Rivals:</strong> ${defeated || "None"}`;
+    }
+
+    this.renderVictoryConfetti();
+    this.victoryOverlay.style.display = "flex";
+  }
+
+  buildVictorySummaryHTML(winner) {
+    const stats = this.game.gameStats || {};
+    const finishedAt = stats.finishedAt || Date.now();
+    const elapsedMs = Math.max(0, finishedAt - (stats.startedAt || finishedAt));
+    const playMs = this.game.getCurrentPlayMs();
+    const propertiesOwned = Object.values(this.game.ownership).filter(ownerIdx => ownerIdx === winner.id).length;
+    const collectionCount = winner.collection ? winner.collection.length : 0;
+    const netWorth = this.game.getNetWorth(winner.id);
+    const humanGoPasses = stats.passesGoByPlayer ? (stats.passesGoByPlayer[winner.id] || 0) : 0;
+    const summaryItems = [
+      ["Total Time", this.formatDuration(elapsedMs)],
+      ["Played Time", this.formatDuration(playMs)],
+      ["Turns", stats.turnsCompleted || 0],
+      ["Your GO Laps", humanGoPasses],
+      ["Total GO Passes", stats.totalPassesGo || 0],
+      ["Final Cash", `₽${winner.cash}`],
+      ["Net Worth", `₽${netWorth}`],
+      ["Properties", propertiesOwned],
+      ["Collection", collectionCount],
+      ["Partner", `${winner.pokemon} Lv.${winner.level}`],
+      ["Started", this.formatDateTime(stats.startedAt)],
+      ["Finished", this.formatDateTime(finishedAt)]
+    ];
+    return summaryItems.map(([label, value]) => `
+      <div class="victory-stat-card">
+        <span class="victory-stat-label">${this.escapeHTML(label)}</span>
+        <span class="victory-stat-value">${this.escapeHTML(value)}</span>
+      </div>
+    `).join("");
+  }
+
+  formatDuration(ms) {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
+  }
+
+  formatDateTime(timestamp) {
+    if (!timestamp) return "Unknown";
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return "Unknown";
+    return date.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+
+  getPokemonSpriteMarkup(pokemonName) {
+    if (!pokemonName) return "";
+    const lowerName = pokemonName.toLowerCase();
+    if (AVAILABLE_PNGS.includes(lowerName)) {
+      return `<img src="images/${lowerName}.png" alt="${this.escapeHTML(pokemonName)}">`;
+    }
+    return PokemonSVGs[pokemonName] || "";
+  }
+
+  renderVictoryConfetti() {
+    if (!this.victoryConfetti || this.victoryConfetti.childElementCount > 0) return;
+    const colors = ["#FFDE00", "#E74C3C", "#3B4CCA", "#2ECC71", "#FFFFFF", "#FF8C00"];
+    const pieces = Array.from({ length: 96 }, (_, idx) => {
+      const left = (idx * 37) % 100;
+      const color = colors[idx % colors.length];
+      const duration = 2.8 + (idx % 7) * 0.28;
+      const delay = -((idx % 13) * 0.19);
+      const rotate = `${(idx * 29) % 180}deg`;
+      return `<span class="confetti-piece" style="left:${left}%; --confetti-color:${color}; --fall-duration:${duration}s; --fall-delay:${delay}s; --confetti-rotate:${rotate};"></span>`;
+    }).join("");
+    this.victoryConfetti.innerHTML = pieces;
   }
 
   uploadLogsToServer() {
@@ -1164,6 +1687,8 @@ class UIManager {
         mortgages: this.game.mortgages
       };
 
+      if (!window.ENABLE_LOG_UPLOAD) return;
+
       fetch('/api/log', {
         method: 'POST',
         headers: {
@@ -1174,7 +1699,7 @@ class UIManager {
           logs: this.game.logs,
           state: state
         })
-      }).catch(err => console.error("Error uploading logs:", err));
+      }).catch(() => {});
     }, 500);
   }
 
@@ -1347,7 +1872,9 @@ class UIManager {
       if (player.isAI) {
         setTimeout(() => this.executeAITurnEnd(), 1500);
       } else {
-        this.endBtn.style.display = "inline-block";
+        this.maybeTriggerMysteryEncounter(player, "freeParking", () => {
+          this.endBtn.style.display = "inline-block";
+        });
       }
       return;
     }
@@ -1725,6 +2252,7 @@ class UIManager {
 
   promptPokemonSelection(callback) {
     const player = this.game.players[0];
+    this.game.ensurePokemonProgress(player);
     const collection = player.collection || [];
 
     // If player has no extra Pokemon, skip selection and use default/starter
@@ -1737,13 +2265,11 @@ class UIManager {
     this.pokemonSelectionOverlay.style.display = "flex";
     Sound.playClick();
 
-    // Prepare list of options: active starter + everything in collection
+    // Prepare list of options: active partner + one current form per evolution line.
     const options = [
       { name: player.pokemon, isStarter: true, index: -1 }
     ];
-    collection.forEach((name, idx) => {
-      options.push({ name, isStarter: false, index: idx });
-    });
+    this.getCanonicalCollectionBattleOptions(player).forEach(option => options.push(option));
 
     let selectedOptionIndex = 0; // Default to active starter (index 0 in options array)
 
@@ -1761,10 +2287,12 @@ class UIManager {
 
         const pokeInfo = PokemonDB[opt.name] || { type: "Normal" };
         const typeClass = `move-type-tag ${pokeInfo.type.toLowerCase()}`;
+        const currentLevel = this.game.getPokemonLevel(player, opt.name);
 
         html += `
           <div class="fighter-card ${isSelected ? 'selected' : ''}" data-opt-idx="${idx}">
             ${opt.isStarter ? '<div class="fighter-badge">PARTNER</div>' : ''}
+            <div class="fighter-level-badge">Lv. ${currentLevel}</div>
             <div class="fighter-sprite">${spriteHtml}</div>
             <div class="fighter-name">${opt.name}</div>
             <span class="${typeClass}">${pokeInfo.type}</span>
@@ -1793,6 +2321,22 @@ class UIManager {
       const chosenPokemon = options[selectedOptionIndex].name;
       callback(chosenPokemon);
     };
+  }
+
+  getCanonicalCollectionBattleOptions(player) {
+    const activeBase = this.game.normalizePokemonName(player, player.pokemon);
+    const byBase = new Map();
+    (player.collection || []).forEach((name, idx) => {
+      const baseName = this.game.normalizePokemonName(player, name);
+      if (baseName === activeBase) return;
+      const chain = this.game.getEvolutionChain(baseName);
+      const stage = chain ? Math.max(0, chain.indexOf(name)) : 0;
+      const existing = byBase.get(baseName);
+      if (!existing || stage > existing.stage) {
+        byBase.set(baseName, { name, isStarter: false, index: idx, stage });
+      }
+    });
+    return [...byBase.values()].map(({ stage, ...option }) => option);
   }
 
   checkAndProcessPassedGo(player, callback) {
@@ -1914,8 +2458,245 @@ class UIManager {
         this.game.log(`🎉 You leveled up ${chosen} to Lv. ${newLvl}! Stats increased!`);
         this.updateUI();
 
-        callback();
+        this.maybeTriggerMysteryEncounter(player, "passGo", callback);
       };
+    }
+  }
+
+  maybeTriggerMysteryEncounter(player, trigger, continuation) {
+    if (!player || player.id !== 0 || player.isBankrupt || this.victoryShown) {
+      continuation();
+      return;
+    }
+    if (this.isEncounterActive || this.isOverlayVisible(this.battleOverlay) || this.isOverlayVisible(this.catchOverlay)) {
+      continuation();
+      return;
+    }
+
+    const state = this.game.mysteryEncounterState || this.game.createMysteryEncounterState();
+    this.game.mysteryEncounterState = state;
+    const baseChanceByTrigger = {
+      passGo: 0.16,
+      freeParking: 0.28,
+      card: 0.14,
+      propertyClaim: 0.12,
+      defenseWin: 0.18,
+      turnEnd: 0.08
+    };
+    const pityChance = Math.min(0.18, (state.sinceLastEncounter || 0) * 0.015);
+    const chance = (baseChanceByTrigger[trigger] || 0.08) + pityChance;
+    if (Math.random() > chance) {
+      continuation();
+      return;
+    }
+
+    const encounter = this.createMysteryEncounter(trigger);
+    state.sinceLastEncounter = 0;
+    state.totalMysteryEncounters = (state.totalMysteryEncounters || 0) + 1;
+    if (encounter.isShiny) state.shinyEncounters = (state.shinyEncounters || 0) + 1;
+    this.showMysteryEncounterModal(encounter, continuation);
+  }
+
+  isOverlayVisible(element) {
+    return !!element && window.getComputedStyle(element).display !== "none";
+  }
+
+  createMysteryEncounter(trigger = "turnEnd") {
+    const pick = MYSTERY_POKEMON_POOL[Math.floor(Math.random() * MYSTERY_POKEMON_POOL.length)];
+    const roll = Math.random();
+    let kind = "Rare";
+    if (roll < 0.08) kind = "Roaming Legendary";
+    else if (roll < 0.20) kind = "Titan";
+    else if (roll < 0.36) kind = "Tera";
+    else if (roll < 0.52) kind = "Swarm";
+    const isShiny = Math.random() < 0.18;
+    const quirk = MYSTERY_QUIRKS[Math.floor(Math.random() * MYSTERY_QUIRKS.length)];
+    const type = PokemonDB[pick.name]?.type || "Normal";
+    const costBoost = kind === "Titan" ? 80 : kind === "Roaming Legendary" ? 120 : 0;
+    return {
+      id: `mystery_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+      name: pick.name,
+      title: pick.title,
+      trigger,
+      kind,
+      rarity: pick.rarity,
+      isShiny,
+      quirk,
+      type,
+      cost: pick.cost + costBoost,
+      watched: false,
+      baited: false
+    };
+  }
+
+  showMysteryEncounterModal(encounter, continuation) {
+    const overlay = this.ensureMysteryEncounterOverlay();
+    const render = () => {
+      const shiny = encounter.isShiny ? `<span class="mystery-tag shiny">SHINY</span>` : "";
+      overlay.innerHTML = `
+        <div class="mystery-card ${encounter.isShiny ? "shiny" : ""}">
+          <div class="mystery-kicker">A mysterious sparkle flashes across the board...</div>
+          <div class="mystery-title">${this.escapeHTML(encounter.isShiny ? `SHINY ${encounter.name}!` : encounter.title)}</div>
+          <div class="mystery-body">
+            <div class="mystery-sprite ${encounter.isShiny ? "shiny" : ""}">${this.getMysterySpriteMarkup(encounter)}</div>
+            <div class="mystery-info">
+              <div class="mystery-name">${this.escapeHTML(encounter.name)}</div>
+              <div class="mystery-tags">
+                ${shiny}
+                <span class="mystery-tag">${this.escapeHTML(encounter.kind)}</span>
+                <span class="mystery-tag">${this.escapeHTML(encounter.rarity)}</span>
+                <span class="move-type-tag ${encounter.type.toLowerCase()}">${this.escapeHTML(encounter.type)}</span>
+              </div>
+              <p>${this.escapeHTML(this.getMysteryFlavorText(encounter))}</p>
+              <div class="mystery-quirk"><strong>Quirk:</strong> ${this.escapeHTML(encounter.quirk.name)} - ${this.escapeHTML(encounter.quirk.text)}</div>
+              ${encounter.baited ? `<div class="mystery-note">Bait tossed: catch odds improved.</div>` : ""}
+              ${encounter.watched ? `<div class="mystery-note">Watched carefully: battle level scouted.</div>` : ""}
+            </div>
+          </div>
+          <div class="mystery-actions">
+            <button class="btn-comic mystery-battle">BATTLE & CATCH</button>
+            <button class="btn-comic mystery-bait">TOSS BAIT ₽50</button>
+            <button class="btn-comic mystery-watch">WATCH CAREFULLY</button>
+            <button class="btn-comic mystery-ignore">IGNORE</button>
+          </div>
+        </div>
+      `;
+      overlay.querySelector(".mystery-battle").addEventListener("click", () => {
+        overlay.style.display = "none";
+        this.promptPokemonSelection(selectedPoke => this.initiateMysteryBattle(selectedPoke, encounter, continuation));
+      });
+      overlay.querySelector(".mystery-bait").addEventListener("click", () => {
+        const player = this.game.players[0];
+        if (player.cash < 50) {
+          this.setDialogText("Not enough cash to toss bait.");
+          return;
+        }
+        player.cash -= 50;
+        encounter.baited = true;
+        this.game.log(`${player.name} tossed bait for the mysterious ${encounter.name}.`);
+        this.updateUI();
+        render();
+      });
+      overlay.querySelector(".mystery-watch").addEventListener("click", () => {
+        encounter.watched = true;
+        this.game.log(`${this.game.players[0].name} watched ${encounter.name} carefully and learned its quirk.`);
+        render();
+      });
+      overlay.querySelector(".mystery-ignore").addEventListener("click", () => {
+        overlay.style.display = "none";
+        this.setDialogText(`The mysterious ${encounter.name} vanished into Paldea.`);
+        continuation();
+      });
+    };
+    render();
+    overlay.style.display = "flex";
+    Sound.playVictory();
+  }
+
+  ensureMysteryEncounterOverlay() {
+    let overlay = document.getElementById("mystery-encounter-overlay");
+    if (overlay) return overlay;
+    overlay = document.createElement("div");
+    overlay.id = "mystery-encounter-overlay";
+    overlay.className = "mystery-encounter-overlay";
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  getMysteryFlavorText(encounter) {
+    if (encounter.kind === "Titan") return `${encounter.name} is huge, glowing, and shaking the board. Win the battle for a trophy catch.`;
+    if (encounter.kind === "Tera") return `${encounter.name} sparkles with Tera energy. Its catch will carry a special badge.`;
+    if (encounter.kind === "Swarm") return `A quick swarm surrounds ${encounter.name}. This is a short-lived chance.`;
+    if (encounter.kind === "Roaming Legendary") return `${encounter.name} is roaming fast. It may not appear again soon.`;
+    return `${encounter.name} appears in a comic burst outside the normal board spaces.`;
+  }
+
+  getMysterySpriteMarkup(encounter) {
+    const lowerName = encounter.name.toLowerCase();
+    if (AVAILABLE_PNGS.includes(lowerName)) {
+      return `<img src="images/${lowerName}.png" alt="${this.escapeHTML(encounter.name)}">`;
+    }
+    if (PokemonSVGs[encounter.name]) return PokemonSVGs[encounter.name];
+    const initials = encounter.name.split(/\s+/).map(part => part[0]).join("").slice(0, 2).toUpperCase();
+    return `<div class="mystery-fallback-sprite ${encounter.type.toLowerCase()}"><span>${this.escapeHTML(initials)}</span></div>`;
+  }
+
+  initiateMysteryBattle(playerPoke, encounter, continuation) {
+    this.resetBattleUIState();
+    Sound.playBattleBGM();
+    this.battleOverlay.style.display = "grid";
+    this.battleTeraBtn.disabled = encounter.kind !== "Tera";
+    this.playerPokeTera.style.display = "none";
+    this.enemyPokeTera.style.display = encounter.kind === "Tera" ? "inline-block" : "none";
+
+    const player = this.game.players[0];
+    const pLevel = this.game.getPokemonLevel(player, playerPoke);
+    const eLevel = Math.max(2, Math.floor(encounter.cost / 70) + (encounter.kind === "Titan" ? 2 : 0));
+    const pMoves = this.getBattleMovesForPlayer(player, playerPoke);
+    Battle.startBattle(playerPoke, encounter.name, false, null, 0, null, pLevel, eLevel, player.powerUpgrades || 0, 0, (won) => {
+      Sound.stopBattleBGM();
+      this.battleOverlay.style.display = "none";
+      if (!won) {
+        this.setDialogText(`${encounter.name} escaped after the battle. The board goes quiet again.`);
+        this.game.log(`Mystery encounter ${encounter.name} escaped after defeating ${playerPoke}.`);
+        continuation();
+        return;
+      }
+      this.initiateMysteryCatchMiniGame(encounter, success => {
+        if (success) {
+          this.addMysteryPokemonToCollection(encounter);
+          this.setDialogText(`${encounter.isShiny ? "Shiny " : ""}${encounter.name} joined your collection with ${encounter.quirk.name}!`);
+          this.game.log(`✨ ${player.name} caught ${encounter.isShiny ? "Shiny " : ""}${encounter.name} (${encounter.kind}, ${encounter.quirk.name}).`);
+          this.renderCollection();
+          this.updateUI();
+        } else {
+          this.setDialogText(`${encounter.name} broke free and disappeared in a flash.`);
+          this.game.log(`Mystery ${encounter.name} broke free and vanished.`);
+        }
+        continuation();
+      });
+    }, pMoves);
+
+    this.updateBattleHUDs();
+    this.setBattleLog(`${encounter.kind} mystery encounter! ${encounter.name} wants to battle!`);
+  }
+
+  initiateMysteryCatchMiniGame(encounter, callback) {
+    const catchSpace = {
+      id: MYSTERY_CATCH_SPACE_ID,
+      name: `${encounter.kind} ${encounter.name}`,
+      pokemon: encounter.name,
+      cost: encounter.baited ? Math.max(60, encounter.cost - 80) : encounter.cost,
+      mysteryEncounter: encounter
+    };
+    this.initiateCatchMiniGame(MYSTERY_CATCH_SPACE_ID, callback, catchSpace, 0);
+  }
+
+  addMysteryPokemonToCollection(encounter) {
+    const player = this.game.players[0];
+    this.game.normalizeCollectionMeta(player);
+    player.collection.push(encounter.name);
+    player.collectionMeta.push({
+      source: "mystery",
+      kind: encounter.kind,
+      rarity: encounter.rarity,
+      shiny: !!encounter.isShiny,
+      quirk: encounter.quirk.name,
+      caughtAt: Date.now()
+    });
+    const normName = this.game.normalizePokemonName(player, encounter.name);
+    if (encounter.quirk.levelBonus) {
+      player.pokemonLevelUps[normName] = (player.pokemonLevelUps[normName] || 0) + encounter.quirk.levelBonus;
+    }
+    if (encounter.quirk.cashBonus) {
+      player.cash += encounter.quirk.cashBonus;
+      this.showCenterActionToast(`+₽${encounter.quirk.cashBonus} ${encounter.quirk.name} quirk!`, "money", this.gameContainer);
+    }
+    if (encounter.quirk.pityBonus && this.game.mysteryEncounterState) {
+      this.game.mysteryEncounterState.sinceLastEncounter += encounter.quirk.pityBonus;
+    }
+    if (this.game.mysteryEncounterState) {
+      this.game.mysteryEncounterState.rareCaught = (this.game.mysteryEncounterState.rareCaught || 0) + 1;
     }
   }
 
@@ -1933,6 +2714,7 @@ class UIManager {
     const pLevel = this.game.getPokemonLevel(this.game.players[0], playerPoke);
     const eLevel = Math.max(1, Math.floor(this.game.spaces[spaceId].cost / 60));
     const pPower = this.game.players[0].powerUpgrades || 0;
+    const pMoves = this.getBattleMovesForPlayer(this.game.players[0], playerPoke);
 
     Battle.startBattle(playerPoke, enemyPoke, false, spaceId, 0, null, pLevel, eLevel, pPower, 0, (won) => {
       Sound.stopBattleBGM();
@@ -1945,43 +2727,67 @@ class UIManager {
             this.game.log(`GOTCHA! Player successfully caught wild ${space.pokemon} and added it to their Collection!`);
             const player0 = this.game.players[0];
             if (!player0.collection) player0.collection = [];
+            this.game.normalizeCollectionMeta(player0);
             if (!player0.collection.includes(space.pokemon)) {
               player0.collection.push(space.pokemon);
+              player0.collectionMeta.push(null);
             }
             this.renderCollection();
             this.game.buyProperty(player0.id, spaceId, 100);
             this.setDialogText(`You caught and claimed ${space.name} for FREE!`);
+            this.buyBtn.style.display = "none";
+            this.endBtn.innerText = "END TURN";
+            this.endBtn.style.display = "inline-block";
+            this.updateUI();
           } else {
             this.game.log(`Oh no! The wild ${space.pokemon} broke free and fled.`);
-            this.setDialogText(`Oh no! Wild ${space.pokemon} broke free and fled.`);
+            this.showFullPriceBuyAfterFailedWildClaim(spaceId, `Oh no! Wild ${space.pokemon} broke free and fled. You can still buy ${space.name} at full price.`);
           }
-          this.buyBtn.style.display = "none";
-          this.endBtn.innerText = "END TURN";
-          this.endBtn.style.display = "inline-block";
-          this.updateUI();
         });
       } else {
-        // human loses: Pokémon escapes and fled, turn ends
-        this.setDialogText(`Defeat! Wild ${enemyPoke} fled.`);
+        // Human loses the free-claim battle, but may still buy the unowned property normally.
         this.game.log(`Wild ${enemyPoke} defeated player and fled!`);
-        this.buyBtn.style.display = "none";
-        this.endBtn.innerText = "END TURN";
-        this.endBtn.style.display = "inline-block";
-        this.updateUI();
+        const space = this.game.spaces[spaceId];
+        this.showFullPriceBuyAfterFailedWildClaim(spaceId, `Defeat! Wild ${enemyPoke} fled. You can still buy ${space.name} at full price.`);
       }
-    });
+    }, pMoves);
 
     this.updateBattleHUDs();
     this.setBattleLog("A wild Pokémon appeared! Start the battle!");
   }
 
-  initiateCatchMiniGame(spaceId, onCatchResult = null) {
+  showFullPriceBuyAfterFailedWildClaim(spaceId, message) {
+    const space = this.game.spaces[spaceId];
+    if (this.game.ownership[spaceId] !== undefined) {
+      this.buyBtn.style.display = "none";
+      this.endBtn.innerText = "END TURN";
+      this.endBtn.style.display = "inline-block";
+      this.updateUI();
+      return;
+    }
+
+    this.currentWildDiscount = 0;
+    this.isEncounterActive = false;
+    this.hideEncounterSprite();
+    this.setDialogText(message);
+    this.updateUI();
+    this.buyBtn.innerText = `BUY AT FULL (₽${space.cost})`;
+    this.buyBtn.classList.add("btn-buy-small");
+    this.buyBtn.style.display = "inline-block";
+    this.endBtn.innerText = "END TURN";
+    this.endBtn.style.display = "inline-block";
+  }
+
+  initiateCatchMiniGame(spaceId, onCatchResult = null, customCatchSpace = null, catchPlayerIdx = null) {
     this.catchSpaceId = spaceId;
     this.onCatchResult = onCatchResult;
-    const space = this.game.spaces[spaceId];
+    this.activeCatchSpace = customCatchSpace || this.game.spaces[spaceId];
+    this.activeCatchPlayerIdx = catchPlayerIdx;
+    const space = this.getActiveCatchSpace();
     this.selectedBall = "poke";
     this.hasCatchGameStarted = false;
     this.ballCostPaid = false;
+    this.pendingCatchQuality = "Miss";
 
     // Update active UI state for default Poke Ball
     this.ballBtnPoke.classList.add("active");
@@ -2008,7 +2814,10 @@ class UIManager {
     if (availablePNGs.includes(lowerPoke)) {
       this.catchPokemonSprite.innerHTML = `<img src="images/${lowerPoke}.png" alt="${space.pokemon}">`;
     } else {
-      this.catchPokemonSprite.innerHTML = PokemonSVGs[space.pokemon];
+      this.catchPokemonSprite.innerHTML = PokemonSVGs[space.pokemon] || this.getMysterySpriteMarkup({
+        name: space.pokemon,
+        type: PokemonDB[space.pokemon]?.type || "Normal"
+      });
     }
 
     // Hide all minigame elements initially
@@ -2083,7 +2892,7 @@ class UIManager {
   }
 
   updateCatchRingSpecs() {
-    const space = this.game.spaces[this.catchSpaceId];
+    const space = this.getActiveCatchSpace();
     if (!space) return;
 
     // Difficulty config based on cost: Easy (<=120), Medium (<=240), Hard (>240)
@@ -2219,7 +3028,7 @@ class UIManager {
   }
 
   startActiveCatchGame() {
-    const player = this.game.getCurrentPlayer();
+    const player = this.getActiveCatchPlayer();
     let costOfBall = 0;
     if (this.selectedBall === "great") costOfBall = 50;
     else if (this.selectedBall === "ultra") costOfBall = 100;
@@ -2306,7 +3115,7 @@ class UIManager {
 
   generateQteSequence() {
     const directions = ["ArrowUp", "ArrowLeft", "ArrowDown", "ArrowRight"];
-    const space = this.game.spaces[this.catchSpaceId];
+    const space = this.getActiveCatchSpace();
     
     // Sequence length scales with cost difficulty
     let length = 5;
@@ -2407,6 +3216,9 @@ class UIManager {
     
     this.hasCatchGameStarted = false;
     this.ballCostPaid = false;
+    this.pendingCatchQuality = "Miss";
+    this.activeCatchSpace = null;
+    this.activeCatchPlayerIdx = null;
 
     // Reset panels layout visibility
     this.ballSelectionPanel.style.display = "flex";
@@ -2423,13 +3235,24 @@ class UIManager {
     guides.forEach(g => g.style.display = "block");
   }
 
+  getActiveCatchSpace() {
+    return this.activeCatchSpace || this.game.spaces[this.catchSpaceId];
+  }
+
+  getActiveCatchPlayer() {
+    if (Number.isInteger(this.activeCatchPlayerIdx)) {
+      return this.game.players[this.activeCatchPlayerIdx];
+    }
+    return this.game.getCurrentPlayer();
+  }
+
   throwBall() {
     this.isCatchAnimRunning = false;
     cancelAnimationFrame(this.catchAnimationId);
     this.throwBallBtn.disabled = true;
 
-    const space = this.game.spaces[this.catchSpaceId];
-    const player = this.game.getCurrentPlayer();
+    const space = this.getActiveCatchSpace();
+    const player = this.getActiveCatchPlayer();
     
     // Check if player has enough money to throw the selected ball
     let costOfBall = 0;
@@ -2533,7 +3356,8 @@ class UIManager {
     
     console.log(`[Catch Success Check] targetSize: ${targetSize.toFixed(1)}, quality: ${throwQuality}, ball: ${this.selectedBall}, difficulty: ${difficultyLabel}, finalChance: ${(clampedChance * 100).toFixed(1)}%`);
 
-    isSuccess = Math.random() < clampedChance;
+	    isSuccess = Math.random() < clampedChance;
+    this.pendingCatchQuality = throwQuality;
 
     // Throw animation trigger
     this.pokeballProjectile.classList.add("throwing");
@@ -2553,12 +3377,12 @@ class UIManager {
       this.pokeballProjectile.classList.remove("throwing");
       this.pokeballProjectile.classList.add("dropping");
 
-      // Show quality feedback pop
-      if (throwQuality !== "Miss") {
-        this.showCatchFeedback(throwQuality + "!");
-      } else {
-        this.showCatchFeedback("Missed!");
-      }
+	      // Show quality feedback pop
+	      if (throwQuality !== "Miss") {
+	        this.showCatchFeedback(this.getCatchQualityRewardLabel(throwQuality) + "!");
+	      } else {
+	        this.showCatchFeedback("Missed!");
+	      }
 
       setTimeout(() => {
         // Drop complete: start wiggling checks
@@ -2600,6 +3424,7 @@ class UIManager {
         this.pokeballProjectile.classList.add("success-burst");
         this.showCatchFeedback("GOTCHA!");
         Sound.playVictory();
+        this.awardCatchQualityReward(this.pendingCatchQuality);
         
         setTimeout(() => {
           this.catchOverlay.style.display = "none";
@@ -2623,6 +3448,30 @@ class UIManager {
     }
   }
 
+  awardCatchQualityReward(quality) {
+    const rewards = {
+      Excellent: 200,
+      Great: 100,
+      Nice: 50
+    };
+    const reward = rewards[quality] || 0;
+    if (reward <= 0) return;
+
+    const player = this.getActiveCatchPlayer();
+    if (!player) return;
+    player.cash += reward;
+    const label = this.getCatchQualityRewardLabel(quality);
+    const article = label === "Excellent" ? "an" : "a";
+    this.game.log(`${player.name} earned ₽${reward} for ${article} ${label} catch!`);
+    this.setDialogText(`${label} catch bonus! You earned ₽${reward}.`);
+    this.showCenterActionToast(`+₽${reward} ${label} catch!`, "money", this.catchOverlay);
+    this.updateUI();
+  }
+
+  getCatchQualityRewardLabel(quality) {
+    return quality === "Great" ? "Good" : quality;
+  }
+
   initiateTrainerBattle(playerPoke, enemyPoke, spaceId, challengerIdx, ownerIdx) {
     this.resetBattleUIState();
     this.prevPlayerTera = false;
@@ -2633,12 +3482,17 @@ class UIManager {
     this.playerPokeTera.style.display = "none";
     this.enemyPokeTera.style.display = "none";
 
-    // Challenger is playerPoke, Owner is enemyPoke
+    // The battle UI always puts the human-controlled side in the player slot.
+    // When an AI challenges a human-owned property, playerPoke belongs to the owner/defender.
     const isHumanChallenger = challengerIdx === 0;
-    const pLevel = this.game.getPokemonLevel(this.game.players[challengerIdx], playerPoke);
-    const eLevel = this.game.getPokemonLevel(this.game.players[ownerIdx], enemyPoke);
-    const pPower = this.game.players[challengerIdx].powerUpgrades || 0;
-    const ePower = this.game.players[ownerIdx].powerUpgrades || 0;
+    const playerSideIdx = isHumanChallenger ? challengerIdx : ownerIdx;
+    const enemySideIdx = isHumanChallenger ? ownerIdx : challengerIdx;
+    const pLevel = this.game.getPokemonLevel(this.game.players[playerSideIdx], playerPoke);
+    const eLevel = this.game.getPokemonLevel(this.game.players[enemySideIdx], enemyPoke);
+    const pPower = this.game.players[playerSideIdx].powerUpgrades || 0;
+    const ePower = this.game.players[enemySideIdx].powerUpgrades || 0;
+    const pMoves = this.getBattleMovesForPlayer(this.game.players[playerSideIdx], playerPoke);
+    const eMoves = this.getBattleMovesForPlayer(this.game.players[enemySideIdx], enemyPoke);
 
     Battle.startBattle(playerPoke, enemyPoke, true, spaceId, challengerIdx, ownerIdx, pLevel, eLevel, pPower, ePower, (won) => {
       Sound.stopBattleBGM();
@@ -2678,19 +3532,28 @@ class UIManager {
         }
       } else {
         // AI challenged Human: Human is owner (Defender)
-        // If human won battle, AI pays 1.5x rent to human. If human lost, AI pays 50% rent to human.
-        // Wait, the callback winner index is 0 (which means battle champion wins. But in battle engine, Player 0 is always the attacker/challenger!)
-        // Oh! In battle engine, player is ALWAYS Player index 0 (which represents the user) and enemy is the AI.
-        // So, if "won" (which means User won battle): The Defender (Human) won! So AI pays 1.5x penalty to human.
-        // If User lost battle: The Attacker (AI) won! So AI pays 50% rent to human.
-        // NOW under new rules, if AI (challenger) wins: AI degrades property by 1 level and takes ownership for free.
+        // Battle engine's "won" means the human-side battler won. Here, the human is the property defender.
         if (won) {
-          this.setDialogText(`Property defended! ${activePlayer.name} pays 1.5x rent penalty.`);
-          this.game.payRent(activePlayer.id, spaceId, -50);
+          const humanOwner = this.game.players[0];
+          if (!humanOwner.collection) humanOwner.collection = [];
+          this.game.normalizeCollectionMeta(humanOwner);
+          if (!humanOwner.collection.includes(enemyPoke)) {
+            humanOwner.collection.push(enemyPoke);
+            humanOwner.collectionMeta.push(null);
+          }
+          this.renderCollection();
+          this.setDialogText(`Property defended! You caught ${enemyPoke}, and ${activePlayer.name} pays full rent.`);
+          this.game.log(`🛡️ Property defended! You caught ${enemyPoke} from ${activePlayer.name}.`);
+          const rentResult = this.game.payRent(activePlayer.id, spaceId, 0);
+          if (rentResult.rent > 0) {
+            this.showCenterActionToast(`Collected ₽${rentResult.rent} rent!`, "money", this.gameContainer);
+          }
           this.isEncounterActive = false;
           this.resolveDuesCheck(activePlayer.id, 0, () => {
             this.updateUI();
-            setTimeout(() => this.executeAITurnEnd(), 800);
+            this.maybeTriggerMysteryEncounter(humanOwner, "defenseWin", () => {
+              setTimeout(() => this.executeAITurnEnd(), 800);
+            });
           });
         } else {
           this.game.degradeProperty(spaceId);
@@ -2703,7 +3566,7 @@ class UIManager {
           });
         }
       }
-    });
+    }, pMoves, eMoves);
 
     this.updateBattleHUDs();
     this.setBattleLog(`Trainer Battle initiated! Defender vs Challenger.`);
@@ -2747,7 +3610,10 @@ class UIManager {
     if (availablePNGs.includes(playerImgName)) {
       this.playerBattleSprite.innerHTML = `<img src="images/${playerImgName}.png" alt="${battle.player.name}" style="width:100%; height:100%; object-fit:contain; border:3px solid #000; border-radius:12px; box-shadow:var(--box-shadow-comic);">`;
     } else {
-      this.playerBattleSprite.innerHTML = PokemonSVGs[battle.player.name];
+      this.playerBattleSprite.innerHTML = PokemonSVGs[battle.player.name] || this.getMysterySpriteMarkup({
+        name: battle.player.name,
+        type: battle.player.type
+      });
     }
 
     if (isPlayerTera) {
@@ -2768,7 +3634,10 @@ class UIManager {
     if (availablePNGs.includes(enemyImgName)) {
       this.enemyBattleSprite.innerHTML = `<img src="images/${enemyImgName}.png" alt="${battle.enemy.name}" style="width:100%; height:100%; object-fit:contain; border:3px solid #000; border-radius:12px; box-shadow:var(--box-shadow-comic);">`;
     } else {
-      this.enemyBattleSprite.innerHTML = PokemonSVGs[battle.enemy.name];
+      this.enemyBattleSprite.innerHTML = PokemonSVGs[battle.enemy.name] || this.getMysterySpriteMarkup({
+        name: battle.enemy.name,
+        type: battle.enemy.type
+      });
     }
 
     if (isEnemyTera) {
@@ -2922,10 +3791,15 @@ class UIManager {
     if (!container) return;
 
     if (!player.collection) player.collection = [];
+    this.game.normalizeCollectionMeta(player);
+    if (!player.lockedCollectionPokemon) player.lockedCollectionPokemon = [];
+    player.lockedCollectionPokemon = player.lockedCollectionPokemon.filter(name => player.collection.includes(name));
     if (!this.selectedCollectionIndices) this.selectedCollectionIndices = [];
 
     // Ensure selection is valid
-    this.selectedCollectionIndices = this.selectedCollectionIndices.filter(idx => idx < player.collection.length);
+    this.selectedCollectionIndices = this.selectedCollectionIndices.filter(idx => {
+      return idx < player.collection.length && !this.isCollectionPokemonLocked(player, player.collection[idx]);
+    });
 
     let html = "";
     if (player.collection.length === 0) {
@@ -2936,6 +3810,8 @@ class UIManager {
 
       player.collection.forEach((poke, idx) => {
         const isSelected = this.selectedCollectionIndices.includes(idx);
+        const isLocked = this.isCollectionPokemonLocked(player, poke);
+        const meta = player.collectionMeta[idx];
         const lowerPoke = poke.toLowerCase();
         let spriteHtml = "";
         if (availablePNGs.includes(lowerPoke)) {
@@ -2945,9 +3821,19 @@ class UIManager {
         }
 
         const currentLvl = this.game.getPokemonLevel(player, poke);
+        const metaBadges = meta ? `
+          <div class="collection-meta-badges">
+            ${meta.shiny ? '<span class="collection-meta-badge shiny">★</span>' : ''}
+            ${meta.kind ? `<span class="collection-meta-badge">${this.escapeHTML(meta.kind[0])}</span>` : ''}
+            ${meta.quirk ? `<span class="collection-meta-badge quirk" title="${this.escapeHTML(meta.quirk)}">${this.escapeHTML(meta.quirk[0])}</span>` : ''}
+          </div>
+        ` : "";
         html += `
-          <div class="collection-item ${isSelected ? 'selected' : ''}" data-idx="${idx}" title="${poke}" style="position: relative;">
+          <div class="collection-item ${isSelected ? 'selected' : ''} ${isLocked ? 'locked' : ''} ${meta?.shiny ? 'shiny' : ''}" data-idx="${idx}" title="${poke}${meta?.quirk ? ` (${meta.quirk})` : ''}${isLocked ? ' (Locked)' : ''}" style="position: relative;">
             ${spriteHtml}
+            ${metaBadges}
+            <button class="collection-lock-btn ${isLocked ? 'locked' : ''}" data-lock-idx="${idx}" title="${isLocked ? 'Unlock' : 'Lock'} ${poke}">${isLocked ? '🔒' : '🔓'}</button>
+            <button class="collection-partner-btn" data-partner-idx="${idx}" title="Make ${poke} your board partner">⭐</button>
             <div style="position: absolute; bottom: -3px; right: -3px; background: #000; color: #FFF; font-size: 0.55rem; padding: 1px 4px; border-radius: 4px; font-weight: 800; border: 1.5px solid #000; box-shadow: 1px 1px 0px #000;">Lv. ${currentLvl}</div>
           </div>
         `;
@@ -2955,22 +3841,51 @@ class UIManager {
       html += `</div>`;
     }
 
-    const tradeDisabled = this.selectedCollectionIndices.length !== 3;
+    const selectedCount = this.selectedCollectionIndices.length;
+    const powerTradeDisabled = selectedCount !== 1;
+    const evolveTradeDisabled = selectedCount !== 3;
+    const tradeHint = selectedCount === 0
+      ? "Select 1 Pokémon for Power, or 3 for Evolution."
+      : `${selectedCount} selected`;
     html += `
       <div class="trade-controls">
-        <button class="btn-trade ${tradeDisabled ? 'disabled' : ''}" id="btn-trade-power" ${tradeDisabled ? 'disabled' : ''}>TRADE FOR POWER</button>
-        <button class="btn-trade ${tradeDisabled ? 'disabled' : ''}" id="btn-trade-evolve" ${tradeDisabled ? 'disabled' : ''}>TRADE FOR EVOLUTION</button>
+        <button class="btn-trade btn-trade-power ${powerTradeDisabled ? 'disabled' : 'ready'}" id="btn-trade-power" ${powerTradeDisabled ? 'disabled' : ''}>TRADE 1 FOR POWER</button>
+        <button class="btn-trade btn-trade-evolve ${evolveTradeDisabled ? 'disabled' : 'ready'}" id="btn-trade-evolve" ${evolveTradeDisabled ? 'disabled' : ''}>TRADE 3 FOR EVOLUTION</button>
       </div>
+      <div class="trade-hint">${tradeHint}</div>
     `;
 
     container.innerHTML = html;
 
     // Attach click listeners to selection
     if (player.collection.length > 0) {
+      const lockButtons = container.querySelectorAll(".collection-lock-btn");
+      lockButtons.forEach(button => {
+        button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const idx = parseInt(button.getAttribute("data-lock-idx"));
+          this.toggleCollectionLock(idx);
+        });
+      });
+
+      const partnerButtons = container.querySelectorAll(".collection-partner-btn");
+      partnerButtons.forEach(button => {
+        button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const idx = parseInt(button.getAttribute("data-partner-idx"));
+          this.setCollectionPokemonAsPartner(idx);
+        });
+      });
+
       const items = container.querySelectorAll(".collection-item");
       items.forEach(item => {
         item.addEventListener("click", () => {
           const idx = parseInt(item.getAttribute("data-idx"));
+          if (this.isCollectionPokemonLocked(player, player.collection[idx])) {
+            this.setDialogText(`${player.collection[idx]} is locked. Unlock it before trading or evolving it.`);
+            Sound.playClick();
+            return;
+          }
           const selectedIdx = this.selectedCollectionIndices.indexOf(idx);
           if (selectedIdx > -1) {
             this.selectedCollectionIndices.splice(selectedIdx, 1);
@@ -2985,15 +3900,15 @@ class UIManager {
       });
     }
 
-    // Attach click listeners to trade buttons
-    if (!tradeDisabled) {
-      const btnPower = document.getElementById("btn-trade-power");
-      const btnEvolve = document.getElementById("btn-trade-evolve");
-
+    // Attach click listeners to trade buttons independently because power and evolution have different costs.
+    const btnPower = document.getElementById("btn-trade-power");
+    const btnEvolve = document.getElementById("btn-trade-evolve");
+    if (btnPower && !powerTradeDisabled) {
       btnPower.addEventListener("click", () => {
         this.executeTrade("power");
       });
-
+    }
+    if (btnEvolve && !evolveTradeDisabled) {
       btnEvolve.addEventListener("click", () => {
         this.executeTrade("evolve");
       });
@@ -3002,46 +3917,413 @@ class UIManager {
 
   executeTrade(type) {
     const player = this.game.players[0];
-    if (!player.collection || this.selectedCollectionIndices.length !== 3) return;
+    const requiredCount = type === "power" ? 1 : 3;
+    if (!player.collection || this.selectedCollectionIndices.length !== requiredCount) return;
+
+    if (type === "power") {
+      this.showMoveLearnModal(this.selectedCollectionIndices[0]);
+      return;
+    }
+
+    if (type === "evolve") {
+      this.showEvolutionTargetModal([...this.selectedCollectionIndices]);
+      return;
+    }
 
     // Get Pokémon traded
     const tradedNames = this.selectedCollectionIndices.map(idx => player.collection[idx]);
 
     // Sort descending to splice safely
     const sortedIndices = [...this.selectedCollectionIndices].sort((a, b) => b - a);
+    this.game.normalizeCollectionMeta(player);
     sortedIndices.forEach(idx => {
       player.collection.splice(idx, 1);
+      player.collectionMeta.splice(idx, 1);
     });
 
     this.selectedCollectionIndices = [];
 
-    if (type === "power") {
-      player.powerUpgrades = (player.powerUpgrades || 0) + 1;
-      this.game.log(`🔄 Traded 3 Pokémon (${tradedNames.join(", ")}) for a Power Upgrade! Permanent +20% damage in battle (Total boost: +${player.powerUpgrades * 20}%).`);
-      this.setDialogText("Trade successful! Partner Pokémon battle damage increased by +20%.");
-      Sound.playVictory();
-    } else if (type === "evolve") {
-      player.evolutionUpgrades = (player.evolutionUpgrades || 0) + 1;
-      const oldPoke = player.pokemon;
-      const oldLevel = player.level;
+    this.renderCollection();
+    this.updateUI();
+  }
 
-      // Recalculate partner stats
-      this.game.recalculatePlayerStats(0);
+  isCollectionPokemonLocked(player, pokemonName) {
+    return Array.isArray(player.lockedCollectionPokemon) && player.lockedCollectionPokemon.includes(pokemonName);
+  }
 
-      if (player.pokemon === oldPoke) {
-        // Did not evolve because already Stage 2, apply bonus levels
-        player.bonusLevels = (player.bonusLevels || 0) + 2;
-        this.game.recalculatePlayerStats(0);
-        this.game.log(`🔄 Traded 3 Pokémon (${tradedNames.join(", ")}) for an Evolution Upgrade! Partner already fully evolved, gained +2 Levels instead!`);
-        this.setDialogText("Fully evolved! Partner gained +2 Levels (+30 Max HP, +20% damage).");
-      } else {
-        // Evolved
-        this.game.log(`🔄 Traded 3 Pokémon (${tradedNames.join(", ")}) for an Evolution Upgrade! Partner evolved from ${oldPoke} to ${player.pokemon}!`);
-        this.setDialogText(`Evolved! Partner evolved to ${player.pokemon}!`);
-      }
-      Sound.playVictory();
+  toggleCollectionLock(idx) {
+    const player = this.game.players[0];
+    if (!player.collection || !player.collection[idx]) return;
+    if (!player.lockedCollectionPokemon) player.lockedCollectionPokemon = [];
+    const pokemonName = player.collection[idx];
+    const lockIdx = player.lockedCollectionPokemon.indexOf(pokemonName);
+    if (lockIdx >= 0) {
+      player.lockedCollectionPokemon.splice(lockIdx, 1);
+      this.setDialogText(`${pokemonName} unlocked. It can now be traded or evolved.`);
+    } else {
+      player.lockedCollectionPokemon.push(pokemonName);
+      this.selectedCollectionIndices = this.selectedCollectionIndices.filter(selectedIdx => selectedIdx !== idx);
+      this.setDialogText(`${pokemonName} locked. It cannot be traded or evolved.`);
+    }
+    Sound.playClick();
+    this.renderCollection();
+  }
+
+  setCollectionPokemonAsPartner(idx) {
+    const player = this.game.players[0];
+    if (!player.collection || !player.collection[idx]) return;
+    this.game.ensurePokemonProgress(player);
+    this.game.normalizeCollectionMeta(player);
+    const nextPartner = player.collection[idx];
+    if (this.isCollectionPokemonLocked(player, nextPartner)) {
+      this.setDialogText(`${nextPartner} is locked. Unlock it before making it your partner.`);
+      Sound.playClick();
+      return;
     }
 
+    if (!player.partnerMoveSets) player.partnerMoveSets = {};
+    const oldPartner = player.pokemon;
+    const oldBase = this.game.normalizePokemonName(player, oldPartner);
+    const oldChain = this.game.getEvolutionChain(oldBase);
+    if (oldChain) {
+      player.pokemonEvolutionStages[oldBase] = Math.max(0, oldChain.indexOf(oldPartner));
+    }
+    if (Array.isArray(player.partnerMoves)) {
+      player.partnerMoveSets[oldBase] = player.partnerMoves.map(move => ({ ...move }));
+    }
+
+    const nextBase = this.game.normalizePokemonName(player, nextPartner);
+    const chain = this.game.getEvolutionChain(nextBase);
+    const selectedStage = chain ? Math.max(0, chain.indexOf(nextPartner)) : 0;
+
+    player.collection.splice(idx, 1);
+    player.collectionMeta.splice(idx, 1);
+    if (oldPartner && !player.collection.includes(oldPartner)) {
+      player.collection.push(oldPartner);
+      player.collectionMeta.push(null);
+    }
+    player.lockedCollectionPokemon = (player.lockedCollectionPokemon || []).filter(name => player.collection.includes(name));
+
+    player.baseStarter = nextBase;
+    player.pokemon = nextPartner;
+    player.pokemonEvolutionStages[nextBase] = selectedStage;
+    player.partnerMoves = player.partnerMoveSets[nextBase]
+      ? player.partnerMoveSets[nextBase].map(move => ({ ...move }))
+      : null;
+
+    this.selectedCollectionIndices = [];
+    this.game.recalculatePlayerStats(0);
+    this.setDialogText(`${player.pokemon} is now your partner on the board.`);
+    this.game.log(`⭐ ${player.name} chose ${player.pokemon} as their active partner.`);
+    Sound.playVictory();
+    this.renderCollection();
+    this.updateUI();
+  }
+
+  getEvolutionChainForPokemon(pokemonName) {
+    const chains = [
+      ["Sprigatito", "Floragato", "Meowscarada"],
+      ["Fuecoco", "Crocalor", "Skeledirge"],
+      ["Quaxly", "Quaxwell", "Quaquaval"],
+      ["Pawmi", "Pawmo", "Pawmot"],
+      ["Tinkatink", "Tinkaton"],
+      ["Charcadet", "Ceruledge"]
+    ];
+    return chains.find(chain => chain.includes(pokemonName)) || null;
+  }
+
+  getNextEvolutionName(pokemonName) {
+    const chain = this.getEvolutionChainForPokemon(pokemonName);
+    if (!chain) return null;
+    const idx = chain.indexOf(pokemonName);
+    const nextName = chain[idx + 1];
+    return nextName && PokemonDB[nextName] ? nextName : null;
+  }
+
+  getPokemonSpriteHTML(pokemonName, className = "") {
+    if (!pokemonName) return "";
+    const lowerName = pokemonName.toLowerCase();
+    const sprite = AVAILABLE_PNGS.includes(lowerName)
+      ? `<img src="images/${lowerName}.png" alt="${this.escapeHTML(pokemonName)}">`
+      : (PokemonSVGs[pokemonName] || "");
+    return `<div class="${className}">${sprite}</div>`;
+  }
+
+  getEvolutionTargets(costIndices) {
+    const player = this.game.players[0];
+    const targets = [];
+    const partnerNext = this.getNextEvolutionName(player.pokemon);
+    targets.push({
+      type: "partner",
+      label: "Partner",
+      name: player.pokemon,
+      nextName: partnerNext,
+      detail: partnerNext ? `Evolve to ${partnerNext}` : "Fully evolved: gain +2 levels"
+    });
+
+    player.collection.forEach((pokemonName, idx) => {
+      if (costIndices.includes(idx)) return;
+      if (this.isCollectionPokemonLocked(player, pokemonName)) return;
+      const nextName = this.getNextEvolutionName(pokemonName);
+      if (!nextName) return;
+      targets.push({
+        type: "collection",
+        index: idx,
+        label: "Collection",
+        name: pokemonName,
+        nextName,
+        detail: `Evolve to ${nextName}`
+      });
+    });
+    return targets;
+  }
+
+  showEvolutionTargetModal(costIndices) {
+    const player = this.game.players[0];
+    if (!player.collection || costIndices.length !== 3) return;
+    if (costIndices.some(idx => this.isCollectionPokemonLocked(player, player.collection[idx]))) {
+      this.setDialogText("Locked Pokémon cannot be used for evolution trades.");
+      this.renderCollection();
+      return;
+    }
+
+    const targets = this.getEvolutionTargets(costIndices);
+    if (targets.length === 0) {
+      this.setDialogText("No eligible unlocked Pokémon can evolve right now.");
+      return;
+    }
+
+    let selectedTargetIdx = 0;
+    const overlay = this.ensureEvolutionTargetOverlay();
+    const costNames = costIndices.map(idx => player.collection[idx]);
+    const render = () => {
+      const cards = targets.map((target, idx) => {
+        const currentSprite = this.getPokemonSpriteHTML(target.name, "evolution-target-sprite");
+        const targetSprite = target.nextName
+          ? this.getPokemonSpriteHTML(target.nextName, "evolution-target-sprite")
+          : `<div class="evolution-target-sprite evolution-target-bonus">+2</div>`;
+        return `
+          <button class="evolution-target-card ${idx === selectedTargetIdx ? 'selected' : ''}" data-target-idx="${idx}">
+            <div class="evolution-target-visuals">
+              ${currentSprite}
+              <span class="evolution-target-arrow-big">${target.nextName ? '→' : '+'}</span>
+              ${targetSprite}
+            </div>
+            <span class="evolution-target-label">${this.escapeHTML(target.label)}</span>
+            <span class="move-learn-name">${this.escapeHTML(target.name)}</span>
+            <span class="evolution-arrow">${target.nextName ? `→ ${this.escapeHTML(target.nextName)}` : '+2 Levels'}</span>
+            <span class="move-learn-text">${this.escapeHTML(target.detail)}</span>
+          </button>
+        `;
+      }).join("");
+
+      overlay.innerHTML = `
+        <div class="move-learn-modal">
+          <div class="move-learn-title">CHOOSE EVOLUTION TARGET</div>
+          <div class="move-learn-subtitle">Trading: ${costNames.map(name => this.escapeHTML(name)).join(", ")}</div>
+          <div class="move-learn-grid">${cards}</div>
+          <div class="move-learn-actions">
+            <button class="btn-comic move-learn-cancel">CANCEL</button>
+            <button class="btn-comic move-learn-confirm">EVOLVE</button>
+          </div>
+        </div>
+      `;
+      overlay.querySelectorAll("[data-target-idx]").forEach(button => {
+        button.addEventListener("click", () => {
+          selectedTargetIdx = Number(button.dataset.targetIdx);
+          Sound.playClick();
+          render();
+        });
+      });
+      overlay.querySelector(".move-learn-cancel").addEventListener("click", () => {
+        Sound.playClick();
+        overlay.style.display = "none";
+      });
+      overlay.querySelector(".move-learn-confirm").addEventListener("click", () => {
+        Sound.playVictory();
+        this.confirmEvolutionTrade(costIndices, targets[selectedTargetIdx]);
+        overlay.style.display = "none";
+      });
+    };
+
+    render();
+    overlay.style.display = "flex";
+  }
+
+  ensureEvolutionTargetOverlay() {
+    let overlay = document.getElementById("evolution-target-overlay");
+    if (overlay) return overlay;
+    overlay = document.createElement("div");
+    overlay.id = "evolution-target-overlay";
+    overlay.className = "move-learn-overlay";
+    overlay.style.display = "none";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) overlay.style.display = "none";
+    });
+    return overlay;
+  }
+
+  confirmEvolutionTrade(costIndices, target) {
+    const player = this.game.players[0];
+    this.game.normalizeCollectionMeta(player);
+    const tradedNames = costIndices.map(idx => player.collection[idx]);
+
+    if (target.type === "partner") {
+      const oldPoke = player.pokemon;
+      this.game.ensurePokemonProgress(player);
+      const baseName = this.game.normalizePokemonName(player, oldPoke);
+      const chain = this.game.getEvolutionChain(baseName);
+      if (target.nextName) {
+        const currentStage = chain ? Math.max(0, chain.indexOf(oldPoke)) : 0;
+        player.pokemonEvolutionStages[baseName] = chain
+          ? Math.min(currentStage + 1, chain.length - 1)
+          : currentStage;
+        this.game.recalculatePlayerStats(0);
+        this.game.log(`🔄 Traded 3 Pokémon (${tradedNames.join(", ")}) to evolve partner ${oldPoke} into ${player.pokemon}!`);
+        this.setDialogText(`Evolved! Partner evolved from ${oldPoke} to ${player.pokemon}!`);
+      } else {
+        player.pokemonBonusLevels[baseName] = (player.pokemonBonusLevels[baseName] || 0) + 2;
+        this.game.recalculatePlayerStats(0);
+        this.game.log(`🔄 Traded 3 Pokémon (${tradedNames.join(", ")}) for +2 partner levels.`);
+        this.setDialogText("Fully evolved! Partner gained +2 Levels (+30 Max HP, +20% damage).");
+      }
+    } else if (target.type === "collection") {
+      const oldName = player.collection[target.index];
+      player.collection[target.index] = target.nextName;
+      if (player.lockedCollectionPokemon) {
+        player.lockedCollectionPokemon = player.lockedCollectionPokemon.filter(name => name !== oldName);
+      }
+      this.game.log(`🔄 Traded 3 Pokémon (${tradedNames.join(", ")}) to evolve ${oldName} into ${target.nextName}!`);
+      this.setDialogText(`${oldName} evolved into ${target.nextName}!`);
+    }
+
+    [...costIndices].sort((a, b) => b - a).forEach(idx => {
+      player.collection.splice(idx, 1);
+      player.collectionMeta.splice(idx, 1);
+    });
+    this.selectedCollectionIndices = [];
+    this.renderCollection();
+    this.updateUI();
+  }
+
+  getDefaultMovesForPokemon(pokemonName) {
+    const base = PokemonDB[pokemonName];
+    if (!base || !Array.isArray(base.moves)) return [];
+    return base.moves.map(move => ({ ...move }));
+  }
+
+  getBattleMovesForPlayer(player, pokemonName) {
+    const defaultMoves = this.getDefaultMovesForPokemon(pokemonName);
+    if (!player) return defaultMoves;
+    const normName = this.game.normalizePokemonName(player, pokemonName);
+    const isPartner = normName === player.baseStarter;
+    if (!isPartner || !Array.isArray(player.partnerMoves) || player.partnerMoves.length < 2) {
+      return defaultMoves;
+    }
+    const savedMoves = player.partnerMoves.map(move => ({ ...move }));
+    return [savedMoves[0] || defaultMoves[0], savedMoves[1] || defaultMoves[1]].filter(Boolean);
+  }
+
+  showMoveLearnModal(tradedIdx) {
+    const player = this.game.players[0];
+    const tradedName = player.collection[tradedIdx];
+    const tradedMoves = this.getDefaultMovesForPokemon(tradedName);
+    const partnerMoves = this.getBattleMovesForPlayer(player, player.pokemon).slice(0, 2);
+    if (!tradedName || tradedMoves.length === 0 || partnerMoves.length < 2) return;
+
+    let selectedMoveIdx = 0;
+    let selectedSlotIdx = 1;
+    const overlay = this.ensureMoveLearnOverlay();
+    const render = () => {
+      const moveCards = tradedMoves.map((move, idx) => `
+        <button class="move-learn-card ${idx === selectedMoveIdx ? "selected" : ""}" data-move-idx="${idx}">
+          <span class="move-learn-name">${this.escapeHTML(move.name)}</span>
+          <span class="move-type-tag ${move.type.toLowerCase()}">${this.escapeHTML(move.type)}</span>
+          <span class="move-learn-power">Power ${move.power}</span>
+          <span class="move-learn-text">${this.escapeHTML(move.text || "")}</span>
+        </button>
+      `).join("");
+      const slotCards = partnerMoves.map((move, idx) => `
+        <button class="move-slot-card ${idx === selectedSlotIdx ? "selected" : ""}" data-slot-idx="${idx}">
+          <span class="move-slot-label">Replace Slot ${idx + 1}</span>
+          <span class="move-learn-name">${this.escapeHTML(move.name)}</span>
+          <span class="move-type-tag ${move.type.toLowerCase()}">${this.escapeHTML(move.type)}</span>
+          <span class="move-learn-power">Power ${move.power}</span>
+        </button>
+      `).join("");
+
+      overlay.innerHTML = `
+        <div class="move-learn-modal">
+          <div class="move-learn-title">LEARN A NEW MOVE</div>
+          <div class="move-learn-subtitle">Trade ${this.escapeHTML(tradedName)} to teach ${this.escapeHTML(player.pokemon)} one of its moves.</div>
+          <div class="move-learn-section-title">${this.escapeHTML(tradedName)}'s Moves</div>
+          <div class="move-learn-grid">${moveCards}</div>
+          <div class="move-learn-section-title">${this.escapeHTML(player.pokemon)} Move Slot</div>
+          <div class="move-slot-grid">${slotCards}</div>
+          <div class="move-learn-actions">
+            <button class="btn-comic move-learn-cancel">CANCEL</button>
+            <button class="btn-comic move-learn-confirm">LEARN MOVE</button>
+          </div>
+        </div>
+      `;
+
+      overlay.querySelectorAll("[data-move-idx]").forEach(button => {
+        button.addEventListener("click", () => {
+          selectedMoveIdx = Number(button.dataset.moveIdx);
+          Sound.playClick();
+          render();
+        });
+      });
+      overlay.querySelectorAll("[data-slot-idx]").forEach(button => {
+        button.addEventListener("click", () => {
+          selectedSlotIdx = Number(button.dataset.slotIdx);
+          Sound.playClick();
+          render();
+        });
+      });
+      overlay.querySelector(".move-learn-cancel").addEventListener("click", () => {
+        Sound.playClick();
+        overlay.style.display = "none";
+      });
+      overlay.querySelector(".move-learn-confirm").addEventListener("click", () => {
+        Sound.playVictory();
+        this.confirmMoveLearnTrade(tradedIdx, tradedMoves[selectedMoveIdx], selectedSlotIdx);
+        overlay.style.display = "none";
+      });
+    };
+
+    render();
+    overlay.style.display = "flex";
+  }
+
+  ensureMoveLearnOverlay() {
+    let overlay = document.getElementById("move-learn-overlay");
+    if (overlay) return overlay;
+    overlay = document.createElement("div");
+    overlay.id = "move-learn-overlay";
+    overlay.className = "move-learn-overlay";
+    overlay.style.display = "none";
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) overlay.style.display = "none";
+    });
+    return overlay;
+  }
+
+  confirmMoveLearnTrade(tradedIdx, learnedMove, slotIdx) {
+    const player = this.game.players[0];
+    this.game.normalizeCollectionMeta(player);
+    const tradedName = player.collection[tradedIdx];
+    if (!tradedName || !learnedMove) return;
+    const currentMoves = this.getBattleMovesForPlayer(player, player.pokemon).slice(0, 2);
+    currentMoves[slotIdx] = { ...learnedMove };
+    player.partnerMoves = currentMoves;
+    player.collection.splice(tradedIdx, 1);
+    player.collectionMeta.splice(tradedIdx, 1);
+    this.selectedCollectionIndices = [];
+    this.game.log(`🔄 Traded ${tradedName} so ${player.pokemon} learned ${learnedMove.name}!`);
+    this.setDialogText(`${player.pokemon} learned ${learnedMove.name}! The new move is saved to your team.`);
     this.renderCollection();
     this.updateUI();
   }
@@ -3070,6 +4352,10 @@ class UIManager {
     else if (effectiveness === 0) word = "NO EFFECT!";
     else if (effectiveness < 1.0) word = "NOT EFFECTIVE";
     this.showActionTextPopup(attackerSide, word);
+    this.showDamageNumber(defenderSide, damage);
+    if (attackerSide === "player") {
+      this.showCenterActionToast(`${move.name}: ${damage} damage!`, effectiveness > 1 ? "damage super" : "damage", this.battleOverlay);
+    }
 
     // 2. Hit Phase (150ms)
     setTimeout(() => {

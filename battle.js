@@ -3,8 +3,8 @@
  * Handles move execution, type matchups, CPU AI, logs, Terastallization, and resolution callbacks.
  */
 
-import { PokemonDB } from './assets.js?v=8';
-import { Sound } from './sound.js?v=8';
+import { PokemonDB } from './assets.js?v=27';
+import { Sound } from './sound.js?v=27';
 
 export class BattleEngine {
   constructor() {
@@ -14,7 +14,7 @@ export class BattleEngine {
   }
 
   // Start a new battle
-  startBattle(playerPokemonName, enemyPokemonName, isTrainerBattle, spaceId, challengerIdx, ownerIdx, playerLevel, enemyLevel, playerPowerUpgrades, enemyPowerUpgrades, onComplete) {
+  startBattle(playerPokemonName, enemyPokemonName, isTrainerBattle, spaceId, challengerIdx, ownerIdx, playerLevel, enemyLevel, playerPowerUpgrades, enemyPowerUpgrades, onComplete, playerMoves = null, enemyMoves = null) {
     const playerBase = PokemonDB[playerPokemonName];
     const enemyBase = PokemonDB[enemyPokemonName];
 
@@ -38,7 +38,7 @@ export class BattleEngine {
         type: playerBase.type,
         maxHp: pMaxHp,
         hp: pMaxHp,
-        moves: playerBase.moves,
+        moves: Array.isArray(playerMoves) && playerMoves.length >= 2 ? playerMoves : playerBase.moves,
         speed: pSpeed,
         level: playerLevel,
         powerUpgrades: playerPowerUpgrades || 0,
@@ -49,7 +49,7 @@ export class BattleEngine {
         type: enemyBase.type,
         maxHp: eMaxHp,
         hp: eMaxHp,
-        moves: enemyBase.moves,
+        moves: Array.isArray(enemyMoves) && enemyMoves.length >= 2 ? enemyMoves : enemyBase.moves,
         speed: eSpeed,
         level: enemyLevel,
         powerUpgrades: enemyPowerUpgrades || 0,

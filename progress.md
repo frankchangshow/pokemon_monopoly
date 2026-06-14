@@ -1,0 +1,44 @@
+Original prompt: save and load should not be here during the turn.. it should just be on the right menu.. next to the sound button.. just make a menu button .. and have those 2 options.. save and load.. don't put that in the middle.. it's too distracting..
+
+Updates:
+- Removed the duplicate center action Save/Load controls and kept Save/Load inside the lower-right utility menu.
+- Moved the utility menu button to the top-right beside the sound toggle so save/load are out of the turn action area.
+- Moved the utility menu markup beside the sound toggle in the DOM so positioning is relative to the page instead of the dashboard.
+- Verified with the web-game Playwright client and a targeted Playwright check: center Save/Load elements are gone, the menu opens, Save/Load are available, and no browser console errors were reported.
+- Bumped asset query versions and added a defensive CSS rule so stale center quick Save/Load button markup cannot appear in encounter prompts.
+- Added a runtime guard and MutationObserver that remove any Save/Load button inserted into the center action box, including stale DOM from already-open game sessions.
+- Changed collection trading so Power Upgrade costs exactly 1 selected Pokémon while Evolution still costs exactly 3 selected Pokémon.
+- Verified the trade behavior in browser: selecting 1 enables Power and consumes 1 Pokémon; selecting 3 enables Evolution and disables Power.
+- Updated human property defense wins: when defending against an AI challenger, the human catches the challenger's Pokémon and the challenger pays full rent.
+- Fixed trainer battle level/power lookup so the visible battle sides use the player record that owns that Pokémon, especially when a human defends against an AI challenger.
+- Verified one-Pokémon power trade click path works and made the enabled Power button visibly green with a cache bump.
+- Fixed the startup save/load area by making the setup overlay scroll vertically and constraining save slot summaries so load buttons remain reachable.
+- Verified the startup screen at 760x832: the setup overlay now scrolls, and the saved slot LOAD button becomes visible and enabled after scrolling.
+- Reworked one-Pokémon power trade into move learning: trade one caught Pokémon, pick one of its moves, replace a partner move slot, and persist the custom partner moves in save state.
+- Verified move learning in browser: learned moves appear in the next battle and survive serialize/load state.
+- Added collection locks and an evolution target picker: locked Pokémon cannot be selected as trade/evolution cost, and trading 3 can now evolve the partner or eligible unlocked collection Pokémon.
+- Verified locks/evolution in browser and confirmed locked/evolved collection state survives serialize/load.
+- Fixed buy-property UI feedback so failed purchases due to insufficient cash no longer claim success.
+- Added successful catch quality bonuses: Excellent ₽200, Good/Great ₽100, Nice ₽50.
+- Added collection partner selection: a collection Pokémon can become the active board/battle partner, old partner returns to collection, and partner move sets are preserved per evolution base.
+- Verified partner switching/evolution in browser: Pawmi became the board partner, Sprigatito returned to collection, state survived serialize/load, and evolving the partner updated the board token to Pawmo.
+- Added prominent center-screen feedback for catch bonus money, player attack damage, damage numbers on hit targets, and rent collected after defending a property.
+- Added sprites to each evolution target card: current Pokémon, evolution arrow, and evolved Pokémon or +2 level badge for fully evolved partners.
+- Verified evolution target sprites in browser: modal renders 3 cards with visual rows, sprite boxes/PNG fallbacks, +2 badge for fully evolved partner, and no console errors.
+- Fixed partner switching level transfer: active board partner now uses its own persistent level/evolution progress instead of inheriting the previously active partner level.
+- Verified partner level persistence in browser: Sprigatito Lv.4 switched to Pawmi Lv.2, Sprigatito stayed Lv.4 in collection, and switching back restored Lv.4 with no console errors.
+- Updated fighter selection modal: each card now shows current level, sprites have framed comic drop shadows, and the grid/footer layout no longer overlaps on shorter screens.
+- Filtered fighter selection options to one current form per evolution line, excluding stale collection forms from the active partner line such as Crocalor when Skeledirge is current.
+- Verified fighter picker in browser: levels rendered for all cards, Crocalor was hidden when Skeledirge was active, footer stayed below the scrollable grid, and no console errors were reported.
+- Fixed defended-property rent collection: payRent now always transfers rent and leaves negative cash/debt handling to resolveDuesCheck instead of silently returning without payment when the debtor is short.
+- Updated defender-win feedback to show collected rent whenever rent is charged, including when the AI enters debt/bankruptcy resolution.
+- Verified defender win in browser with AI unable to afford rent: human cash increased by full rent, rent log/toast appeared, and AI debt/bankruptcy resolved afterward without console errors.
+- Added persistent gameStats tracking: started time, play time, completed turns, total GO passes, and per-player GO passes, persisted through save/load.
+- Added win condition when only the human player remains active; the game marks finished and shows a full-screen YOU WON!!! celebration with confetti, balloons, cheering/clapping text, partner sprite, and game summary.
+- Verified victory flow in browser by bankrupting all rivals: overlay displayed, summary included total time, played time, turns, GO laps, cash, net worth, properties, collection, start/finish times, and no console errors occurred.
+- Added random mystery encounters for rare Paldea Pokémon, shiny variants, encounter kinds, and quirks. Encounters can appear from key game moments like passing GO, Free Parking, claiming property, and defending successfully, with a pity-style chance increase after quiet turns.
+- Added rare Paldea battle data for Palafin, Baxcalibur, Gholdengo, Kingambit, Annihilape, Clodsire, Cyclizar, Flamigo, Glimmora, Farigiraf, Dudunsparce, and Maushold.
+- Added a comic-style mystery encounter modal with Battle & Catch, Toss Bait, Watch Carefully, and Ignore actions, plus fallback sprite cards so future generated sprites are not required for the feature to work now.
+- Added persistent collection metadata for mystery catches: source, encounter kind, rarity, shiny flag, quirk, and caught timestamp. The collection panel now shows shiny/kind/quirk badges and keeps metadata aligned when Pokémon are traded, evolved, moved to partner, or transferred.
+- Verified mystery encounter behavior with Playwright: forced Shiny Palafin modal rendered, fallback art displayed without broken images, bait deducted ₽50, collection badges appeared, metadata survived serialize/load, and no browser console errors were reported.
+- Made `/api/log` uploads opt-in via `window.ENABLE_LOG_UPLOAD` so static local play/testing no longer logs a false 501 console error from the Python dev server.

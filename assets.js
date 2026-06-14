@@ -640,7 +640,19 @@ export const PokemonDB = {
   Koraidon: { name: "Koraidon", type: "Fighting", hp: 170, moves: [{ name: "Drain Punch", type: "Fighting", power: 22, text: "PUNCH CHORD!" }, { name: "Collision Course", type: "Fighting", power: 45, text: "APOCALYPSE IMPACT!" }], speed: 95 },
   Miraidon: { name: "Miraidon", type: "Electric", hp: 170, moves: [{ name: "Parabolic Charge", type: "Electric", power: 22, text: "ELECTRON BEAM!" }, { name: "Electro Drift", type: "Electric", power: 45, text: "LIGHTNING SONIC DRIFT!" }], speed: 95 },
   Corviknight: { name: "Corviknight", type: "Steel", hp: 145, moves: [{ name: "Steel Wing", type: "Steel", power: 22, text: "Metallic wing slice!" }, { name: "Drill Peck", type: "Flying", power: 30, text: "Spinning beak strike!" }], speed: 67 },
-  Rotom: { name: "Rotom", type: "Electric", hp: 110, moves: [{ name: "Discharge", type: "Electric", power: 25, text: "Electric spark blast!" }, { name: "Shadow Ball", type: "Ghost", power: 25, text: "Spooky shadow sphere!" }], speed: 91 }
+  Rotom: { name: "Rotom", type: "Electric", hp: 110, moves: [{ name: "Discharge", type: "Electric", power: 25, text: "Electric spark blast!" }, { name: "Shadow Ball", type: "Ghost", power: 25, text: "Spooky shadow sphere!" }], speed: 91 },
+  Palafin: { name: "Palafin", type: "Water", hp: 155, moves: [{ name: "Jet Punch", type: "Water", power: 36, text: "HERO WAVE PUNCH!" }, { name: "Flip Turn", type: "Water", power: 28, text: "Splash-and-dash!" }], speed: 100 },
+  Baxcalibur: { name: "Baxcalibur", type: "Dragon", hp: 170, moves: [{ name: "Glaive Rush", type: "Dragon", power: 48, text: "CRYSTAL DRAGON CHARGE!" }, { name: "Icicle Crash", type: "Ice", power: 38, text: "ICE SPIKE SLAM!" }], speed: 87 },
+  Gholdengo: { name: "Gholdengo", type: "Steel", hp: 145, moves: [{ name: "Make It Rain", type: "Steel", power: 46, text: "COINS EVERYWHERE!" }, { name: "Shadow Ball", type: "Ghost", power: 34, text: "Golden ghost blast!" }], speed: 84 },
+  Kingambit: { name: "Kingambit", type: "Dark", hp: 165, moves: [{ name: "Kowtow Cleave", type: "Dark", power: 42, text: "BLADE COMMAND!" }, { name: "Iron Head", type: "Steel", power: 35, text: "Steel crown crash!" }], speed: 50 },
+  Annihilape: { name: "Annihilape", type: "Fighting", hp: 155, moves: [{ name: "Rage Fist", type: "Ghost", power: 44, text: "FURY GHOST PUNCH!" }, { name: "Close Combat", type: "Fighting", power: 40, text: "NO MERCY COMBO!" }], speed: 90 },
+  Clodsire: { name: "Clodsire", type: "Poison", hp: 175, moves: [{ name: "Poison Jab", type: "Poison", power: 30, text: "TOXIC SPIKE!" }, { name: "Earthquake", type: "Ground", power: 36, text: "MUDDY GROUND SHAKE!" }], speed: 25 },
+  Cyclizar: { name: "Cyclizar", type: "Dragon", hp: 125, moves: [{ name: "Dragon Claw", type: "Dragon", power: 32, text: "Wheel-speed slash!" }, { name: "Quick Attack", type: "Normal", power: 28, text: "Roadrunner rush!" }], speed: 121 },
+  Flamigo: { name: "Flamigo", type: "Flying", hp: 130, moves: [{ name: "Wing Attack", type: "Flying", power: 32, text: "Flock strike!" }, { name: "Double Kick", type: "Fighting", power: 30, text: "KICK-KICK!" }], speed: 90 },
+  Glimmora: { name: "Glimmora", type: "Rock", hp: 140, moves: [{ name: "Power Gem", type: "Rock", power: 38, text: "CRYSTAL LASER!" }, { name: "Sludge Wave", type: "Poison", power: 34, text: "TOXIC BLOOM!" }], speed: 86 },
+  Farigiraf: { name: "Farigiraf", type: "Psychic", hp: 150, moves: [{ name: "Twin Beam", type: "Psychic", power: 36, text: "DOUBLE MIND RAY!" }, { name: "Stomp", type: "Normal", power: 28, text: "Hoof stomp!" }], speed: 60 },
+  Dudunsparce: { name: "Dudunsparce", type: "Normal", hp: 160, moves: [{ name: "Hyper Drill", type: "Normal", power: 40, text: "GOOFY DRILL BURST!" }, { name: "Glare", type: "Normal", power: 24, text: "Awkward stare!" }], speed: 55 },
+  Maushold: { name: "Maushold", type: "Normal", hp: 120, moves: [{ name: "Population Bomb", type: "Normal", power: 42, text: "FAMILY COMBO!" }, { name: "Play Rough", type: "Fairy", power: 30, text: "Tiny chaos!" }], speed: 111 }
 };
 
 export const SpecialSVGs = {
