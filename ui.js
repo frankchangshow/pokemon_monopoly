@@ -16,6 +16,7 @@ const AVAILABLE_PNGS = [
   "tinkaton", "ceruledge", "koraidon", "miraidon", "lechonk", "charcadet", "tinkatink", "fidough", "smoliv",
   "tarountula", "corviknight", "tandemaus", "rotom", "nacli", "orthworm", "toedscool", "capsakid", "grafaiai", "shroodle", "wattrel", "bellibolt",
   "dondozo", "tatsugiri", "veluza",
+  "annihilape", "baxcalibur", "clodsire", "cyclizar", "dudunsparce", "farigiraf", "flamigo", "gholdengo", "glimmora", "kingambit", "maushold", "palafin",
   "sprigatito_tera", "fuecoco_tera", "quaxly_tera", "pawmi_tera",
   "go_sprite", "jail_sprite", "free_parking_sprite", "go_to_jail_sprite",
   "go_full", "jail_full", "free_parking_full", "go_to_jail_full",
@@ -4021,14 +4022,8 @@ class UIManager {
   }
 
   getEvolutionChainForPokemon(pokemonName) {
-    const chains = [
-      ["Sprigatito", "Floragato", "Meowscarada"],
-      ["Fuecoco", "Crocalor", "Skeledirge"],
-      ["Quaxly", "Quaxwell", "Quaquaval"],
-      ["Pawmi", "Pawmo", "Pawmot"],
-      ["Tinkatink", "Tinkaton"],
-      ["Charcadet", "Ceruledge"]
-    ];
+    if (!this.game) return null;
+    const chains = Object.values(this.game.getEvolutionChains());
     return chains.find(chain => chain.includes(pokemonName)) || null;
   }
 

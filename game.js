@@ -937,7 +937,9 @@ export class GameEngine {
       "Quaxly": ["Quaxly", "Quaxwell", "Quaquaval"],
       "Pawmi": ["Pawmi", "Pawmo", "Pawmot"],
       "Tinkatink": ["Tinkatink", "Tinkaton"],
-      "Charcadet": ["Charcadet", "Ceruledge"]
+      "Charcadet": ["Charcadet", "Ceruledge"],
+      "Shroodle": ["Shroodle", "Grafaiai"],
+      "Tandemaus": ["Tandemaus", "Maushold"]
     };
   }
 
