@@ -655,6 +655,57 @@ export const PokemonDB = {
   Maushold: { name: "Maushold", type: "Normal", hp: 120, moves: [{ name: "Population Bomb", type: "Normal", power: 42, text: "FAMILY COMBO!" }, { name: "Play Rough", type: "Fairy", power: 30, text: "Tiny chaos!" }], speed: 111 }
 };
 
+export const PokemonBattleStats = {
+  Sprigatito: { types: ["Grass"], stats: { hp: 40, attack: 61, defense: 54, specialAttack: 45, specialDefense: 45, speed: 65 } },
+  Floragato: { types: ["Grass"], stats: { hp: 61, attack: 80, defense: 63, specialAttack: 60, specialDefense: 63, speed: 83 } },
+  Meowscarada: { types: ["Grass", "Dark"], stats: { hp: 76, attack: 110, defense: 70, specialAttack: 81, specialDefense: 70, speed: 123 } },
+  Fuecoco: { types: ["Fire"], stats: { hp: 67, attack: 45, defense: 59, specialAttack: 63, specialDefense: 40, speed: 36 } },
+  Crocalor: { types: ["Fire"], stats: { hp: 81, attack: 55, defense: 78, specialAttack: 90, specialDefense: 58, speed: 49 } },
+  Skeledirge: { types: ["Fire", "Ghost"], stats: { hp: 104, attack: 75, defense: 100, specialAttack: 110, specialDefense: 75, speed: 66 } },
+  Quaxly: { types: ["Water"], stats: { hp: 55, attack: 65, defense: 45, specialAttack: 50, specialDefense: 45, speed: 50 } },
+  Quaxwell: { types: ["Water"], stats: { hp: 70, attack: 85, defense: 65, specialAttack: 65, specialDefense: 60, speed: 65 } },
+  Quaquaval: { types: ["Water", "Fighting"], stats: { hp: 85, attack: 120, defense: 80, specialAttack: 85, specialDefense: 75, speed: 85 } },
+  Pawmi: { types: ["Electric"], stats: { hp: 45, attack: 50, defense: 20, specialAttack: 40, specialDefense: 25, speed: 60 } },
+  Pawmo: { types: ["Electric", "Fighting"], stats: { hp: 60, attack: 75, defense: 40, specialAttack: 50, specialDefense: 40, speed: 85 } },
+  Pawmot: { types: ["Electric", "Fighting"], stats: { hp: 70, attack: 115, defense: 70, specialAttack: 70, specialDefense: 60, speed: 105 } },
+  Lechonk: { types: ["Normal"], stats: { hp: 54, attack: 45, defense: 40, specialAttack: 35, specialDefense: 45, speed: 35 } },
+  Tarountula: { types: ["Bug"], stats: { hp: 35, attack: 41, defense: 45, specialAttack: 29, specialDefense: 40, speed: 20 } },
+  Fidough: { types: ["Fairy"], stats: { hp: 37, attack: 55, defense: 70, specialAttack: 30, specialDefense: 55, speed: 65 } },
+  Smoliv: { types: ["Grass", "Normal"], stats: { hp: 41, attack: 35, defense: 45, specialAttack: 58, specialDefense: 51, speed: 30 } },
+  Tandemaus: { types: ["Normal"], stats: { hp: 50, attack: 50, defense: 45, specialAttack: 40, specialDefense: 45, speed: 75 } },
+  Nacli: { types: ["Rock"], stats: { hp: 55, attack: 55, defense: 75, specialAttack: 35, specialDefense: 35, speed: 25 } },
+  Charcadet: { types: ["Fire"], stats: { hp: 40, attack: 50, defense: 40, specialAttack: 50, specialDefense: 40, speed: 35 } },
+  Orthworm: { types: ["Steel"], stats: { hp: 70, attack: 85, defense: 145, specialAttack: 60, specialDefense: 55, speed: 65 } },
+  Toedscool: { types: ["Ground", "Grass"], stats: { hp: 40, attack: 40, defense: 35, specialAttack: 50, specialDefense: 100, speed: 70 } },
+  Capsakid: { types: ["Grass"], stats: { hp: 50, attack: 62, defense: 40, specialAttack: 62, specialDefense: 40, speed: 50 } },
+  Grafaiai: { types: ["Poison", "Normal"], stats: { hp: 63, attack: 95, defense: 65, specialAttack: 80, specialDefense: 72, speed: 110 } },
+  Shroodle: { types: ["Poison", "Normal"], stats: { hp: 40, attack: 65, defense: 35, specialAttack: 40, specialDefense: 35, speed: 75 } },
+  Tinkatink: { types: ["Fairy", "Steel"], stats: { hp: 50, attack: 45, defense: 45, specialAttack: 35, specialDefense: 64, speed: 58 } },
+  Tinkaton: { types: ["Fairy", "Steel"], stats: { hp: 85, attack: 75, defense: 77, specialAttack: 70, specialDefense: 105, speed: 94 } },
+  Wattrel: { types: ["Electric", "Flying"], stats: { hp: 40, attack: 40, defense: 35, specialAttack: 55, specialDefense: 40, speed: 70 } },
+  Bellibolt: { types: ["Electric"], stats: { hp: 109, attack: 64, defense: 91, specialAttack: 103, specialDefense: 83, speed: 45 } },
+  Dondozo: { types: ["Water"], stats: { hp: 150, attack: 100, defense: 115, specialAttack: 65, specialDefense: 65, speed: 35 } },
+  Tatsugiri: { types: ["Water", "Dragon"], stats: { hp: 68, attack: 50, defense: 60, specialAttack: 120, specialDefense: 95, speed: 82 } },
+  Veluza: { types: ["Water", "Psychic"], stats: { hp: 90, attack: 102, defense: 73, specialAttack: 78, specialDefense: 65, speed: 70 } },
+  Ceruledge: { types: ["Fire", "Ghost"], stats: { hp: 75, attack: 125, defense: 80, specialAttack: 60, specialDefense: 100, speed: 85 } },
+  Koraidon: { types: ["Fighting", "Dragon"], stats: { hp: 100, attack: 135, defense: 115, specialAttack: 85, specialDefense: 100, speed: 135 } },
+  Miraidon: { types: ["Electric", "Dragon"], stats: { hp: 100, attack: 85, defense: 100, specialAttack: 135, specialDefense: 115, speed: 135 } },
+  Corviknight: { types: ["Flying", "Steel"], stats: { hp: 98, attack: 87, defense: 105, specialAttack: 53, specialDefense: 85, speed: 67 } },
+  Rotom: { types: ["Electric", "Ghost"], stats: { hp: 50, attack: 50, defense: 77, specialAttack: 95, specialDefense: 77, speed: 91 } },
+  Palafin: { types: ["Water"], stats: { hp: 100, attack: 70, defense: 72, specialAttack: 53, specialDefense: 62, speed: 100 } },
+  Baxcalibur: { types: ["Dragon", "Ice"], stats: { hp: 115, attack: 145, defense: 92, specialAttack: 75, specialDefense: 86, speed: 87 } },
+  Gholdengo: { types: ["Steel", "Ghost"], stats: { hp: 87, attack: 60, defense: 95, specialAttack: 133, specialDefense: 91, speed: 84 } },
+  Kingambit: { types: ["Dark", "Steel"], stats: { hp: 100, attack: 135, defense: 120, specialAttack: 60, specialDefense: 85, speed: 50 } },
+  Annihilape: { types: ["Fighting", "Ghost"], stats: { hp: 110, attack: 115, defense: 80, specialAttack: 50, specialDefense: 90, speed: 90 } },
+  Clodsire: { types: ["Poison", "Ground"], stats: { hp: 130, attack: 75, defense: 60, specialAttack: 45, specialDefense: 100, speed: 20 } },
+  Cyclizar: { types: ["Dragon", "Normal"], stats: { hp: 70, attack: 95, defense: 65, specialAttack: 85, specialDefense: 65, speed: 121 } },
+  Flamigo: { types: ["Flying", "Fighting"], stats: { hp: 82, attack: 115, defense: 74, specialAttack: 75, specialDefense: 64, speed: 90 } },
+  Glimmora: { types: ["Rock", "Poison"], stats: { hp: 83, attack: 55, defense: 90, specialAttack: 130, specialDefense: 81, speed: 86 } },
+  Farigiraf: { types: ["Normal", "Psychic"], stats: { hp: 120, attack: 90, defense: 70, specialAttack: 110, specialDefense: 70, speed: 60 } },
+  Dudunsparce: { types: ["Normal"], stats: { hp: 125, attack: 100, defense: 80, specialAttack: 85, specialDefense: 75, speed: 55 } },
+  Maushold: { types: ["Normal"], stats: { hp: 74, attack: 75, defense: 70, specialAttack: 65, specialDefense: 75, speed: 111 } }
+};
+
 export const SpecialSVGs = {
   GO: `
     <svg viewBox="0 0 100 100" width="100%" height="100%">

@@ -2243,6 +2243,20 @@ body {
 .move-type-tag.ice { background-color: #98D8D8; color: #000; }
 .move-type-tag.psychic { background-color: #F85888; }
 
+.move-category-tag {
+  display: inline-block;
+  background: #ECF0F1;
+  color: #2C3E50;
+  border: 2px solid #000;
+  border-radius: 8px;
+  padding: 1px 6px;
+  margin: 0 3px;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  box-shadow: 1px 1px 0 #000;
+}
+
 .mystery-encounter-overlay {
   position: fixed;
   inset: 0;

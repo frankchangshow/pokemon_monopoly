@@ -1,0 +1,141 @@
+{
+  "metadata": {
+    "source": "offline fixture based on public Pokemon Scarlet/Violet species data",
+    "scope": "Paldea starter lines plus representative Paldea Pokemon for deterministic tests",
+    "official_stat_names": ["hp", "attack", "defense", "special_attack", "special_defense", "speed"]
+  },
+  "pokemon": [
+    {
+      "id": 906,
+      "name": "sprigatito",
+      "types": ["grass"],
+      "base_stats": {"hp": 40, "attack": 61, "defense": 54, "special_attack": 45, "special_defense": 45, "speed": 65},
+      "moves": [
+        {"name": "leafage", "type": "grass", "category": "physical", "power": 40, "accuracy": 100},
+        {"name": "hone-claws", "type": "dark", "category": "status", "power": null, "accuracy": null, "stat_changes": [{"target": "self", "stat": "attack", "stages": 1}, {"target": "self", "stat": "accuracy", "stages": 1}]}
+      ],
+      "evolutions": [{"from_species": "sprigatito", "to_species": "floragato", "trigger": "level-up", "minimum_level": 16}]
+    },
+    {
+      "id": 907,
+      "name": "floragato",
+      "types": ["grass"],
+      "base_stats": {"hp": 61, "attack": 80, "defense": 63, "special_attack": 60, "special_defense": 63, "speed": 83},
+      "moves": [
+        {"name": "magical-leaf", "type": "grass", "category": "special", "power": 60, "accuracy": null},
+        {"name": "scratch", "type": "normal", "category": "physical", "power": 40, "accuracy": 100}
+      ],
+      "evolutions": [{"from_species": "floragato", "to_species": "meowscarada", "trigger": "level-up", "minimum_level": 36}]
+    },
+    {
+      "id": 908,
+      "name": "meowscarada",
+      "types": ["grass", "dark"],
+      "base_stats": {"hp": 76, "attack": 110, "defense": 70, "special_attack": 81, "special_defense": 70, "speed": 123},
+      "moves": [
+        {"name": "flower-trick", "type": "grass", "category": "physical", "power": 70, "accuracy": null},
+        {"name": "night-slash", "type": "dark", "category": "physical", "power": 70, "accuracy": 100}
+      ],
+      "evolutions": []
+    },
+    {
+      "id": 909,
+      "name": "fuecoco",
+      "types": ["fire"],
+      "base_stats": {"hp": 67, "attack": 45, "defense": 59, "special_attack": 63, "special_defense": 40, "speed": 36},
+      "moves": [
+        {"name": "ember", "type": "fire", "category": "special", "power": 40, "accuracy": 100, "status_effects": [{"target": "opponent", "status": "burn", "chance": 0.1}]},
+        {"name": "leer", "type": "normal", "category": "status", "power": null, "accuracy": 100, "stat_changes": [{"target": "opponent", "stat": "defense", "stages": -1}]}
+      ],
+      "evolutions": [{"from_species": "fuecoco", "to_species": "crocalor", "trigger": "level-up", "minimum_level": 16}]
+    },
+    {
+      "id": 910,
+      "name": "crocalor",
+      "types": ["fire"],
+      "base_stats": {"hp": 81, "attack": 55, "defense": 78, "special_attack": 90, "special_defense": 58, "speed": 49},
+      "moves": [
+        {"name": "flamethrower", "type": "fire", "category": "special", "power": 90, "accuracy": 100, "status_effects": [{"target": "opponent", "status": "burn", "chance": 0.1}]},
+        {"name": "round", "type": "normal", "category": "special", "power": 60, "accuracy": 100}
+      ],
+      "evolutions": [{"from_species": "crocalor", "to_species": "skeledirge", "trigger": "level-up", "minimum_level": 36}]
+    },
+    {
+      "id": 911,
+      "name": "skeledirge",
+      "types": ["fire", "ghost"],
+      "base_stats": {"hp": 104, "attack": 75, "defense": 100, "special_attack": 110, "special_defense": 75, "speed": 66},
+      "moves": [
+        {"name": "torch-song", "type": "fire", "category": "special", "power": 80, "accuracy": 100, "stat_changes": [{"target": "self", "stat": "special_attack", "stages": 1}]},
+        {"name": "shadow-ball", "type": "ghost", "category": "special", "power": 80, "accuracy": 100, "stat_changes": [{"target": "opponent", "stat": "special_defense", "stages": -1, "chance": 0.2}]}
+      ],
+      "evolutions": []
+    },
+    {
+      "id": 912,
+      "name": "quaxly",
+      "types": ["water"],
+      "base_stats": {"hp": 55, "attack": 65, "defense": 45, "special_attack": 50, "special_defense": 45, "speed": 50},
+      "moves": [
+        {"name": "water-gun", "type": "water", "category": "special", "power": 40, "accuracy": 100},
+        {"name": "work-up", "type": "normal", "category": "status", "power": null, "accuracy": null, "stat_changes": [{"target": "self", "stat": "attack", "stages": 1}, {"target": "self", "stat": "special_attack", "stages": 1}]}
+      ],
+      "evolutions": [{"from_species": "quaxly", "to_species": "quaxwell", "trigger": "level-up", "minimum_level": 16}]
+    },
+    {
+      "id": 913,
+      "name": "quaxwell",
+      "types": ["water"],
+      "base_stats": {"hp": 70, "attack": 85, "defense": 65, "special_attack": 65, "special_defense": 60, "speed": 65},
+      "moves": [
+        {"name": "aqua-cutter", "type": "water", "category": "physical", "power": 70, "accuracy": 100},
+        {"name": "wing-attack", "type": "flying", "category": "physical", "power": 60, "accuracy": 100}
+      ],
+      "evolutions": [{"from_species": "quaxwell", "to_species": "quaquaval", "trigger": "level-up", "minimum_level": 36}]
+    },
+    {
+      "id": 914,
+      "name": "quaquaval",
+      "types": ["water", "fighting"],
+      "base_stats": {"hp": 85, "attack": 120, "defense": 80, "special_attack": 85, "special_defense": 75, "speed": 85},
+      "moves": [
+        {"name": "aqua-step", "type": "water", "category": "physical", "power": 80, "accuracy": 100, "stat_changes": [{"target": "self", "stat": "speed", "stages": 1}]},
+        {"name": "close-combat", "type": "fighting", "category": "physical", "power": 120, "accuracy": 100, "stat_changes": [{"target": "self", "stat": "defense", "stages": -1}, {"target": "self", "stat": "special_defense", "stages": -1}]}
+      ],
+      "evolutions": []
+    },
+    {
+      "id": 921,
+      "name": "pawmi",
+      "types": ["electric"],
+      "base_stats": {"hp": 45, "attack": 50, "defense": 20, "special_attack": 40, "special_defense": 25, "speed": 60},
+      "moves": [
+        {"name": "thunder-shock", "type": "electric", "category": "special", "power": 40, "accuracy": 100, "status_effects": [{"target": "opponent", "status": "paralysis", "chance": 0.1}]},
+        {"name": "quick-attack", "type": "normal", "category": "physical", "power": 40, "accuracy": 100, "priority": 1}
+      ],
+      "evolutions": [{"from_species": "pawmi", "to_species": "pawmo", "trigger": "level-up", "minimum_level": 18}]
+    },
+    {
+      "id": 936,
+      "name": "armarouge",
+      "types": ["fire", "psychic"],
+      "base_stats": {"hp": 85, "attack": 60, "defense": 100, "special_attack": 125, "special_defense": 80, "speed": 75},
+      "moves": [
+        {"name": "armor-cannon", "type": "fire", "category": "special", "power": 120, "accuracy": 100, "stat_changes": [{"target": "self", "stat": "defense", "stages": -1}, {"target": "self", "stat": "special_defense", "stages": -1}]},
+        {"name": "psyshock", "type": "psychic", "category": "special", "power": 80, "accuracy": 100}
+      ],
+      "evolutions": []
+    },
+    {
+      "id": 937,
+      "name": "ceruledge",
+      "types": ["fire", "ghost"],
+      "base_stats": {"hp": 75, "attack": 125, "defense": 80, "special_attack": 60, "special_defense": 100, "speed": 85},
+      "moves": [
+        {"name": "bitter-blade", "type": "fire", "category": "physical", "power": 90, "accuracy": 100},
+        {"name": "shadow-claw", "type": "ghost", "category": "physical", "power": 70, "accuracy": 100}
+      ],
+      "evolutions": []
+    }
+  ]
+}

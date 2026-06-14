@@ -42,3 +42,10 @@ Updates:
 - Added persistent collection metadata for mystery catches: source, encounter kind, rarity, shiny flag, quirk, and caught timestamp. The collection panel now shows shiny/kind/quirk badges and keeps metadata aligned when Pokémon are traded, evolved, moved to partner, or transferred.
 - Verified mystery encounter behavior with Playwright: forced Shiny Palafin modal rendered, fallback art displayed without broken images, bait deducted ₽50, collection badges appeared, metadata survived serialize/load, and no browser console errors were reported.
 - Made `/api/log` uploads opt-in via `window.ENABLE_LOG_UPLOAD` so static local play/testing no longer logs a false 501 console error from the Python dev server.
+- Created branch `battle-engine-stat-integration` for the richer battle engine work.
+- Inspected `PokemonBattleEngine/` in parallel with sub-agents. It is a Python reference implementation with six official stats, physical/special/status moves, full 18-type chart, stat stages, status effects, Tera, weather/terrain hooks, and passing unit tests.
+- Added browser-native battle stat integration: `PokemonBattleStats` now provides HP, Attack, Defense, Sp. Atk, Sp. Def, Speed, and dual types for the 48-game roster; `battle.js` keeps the existing `Battle.startBattle(...)` API but now calculates battle HP/stats with official-style stat formulas.
+- Reworked JS battle damage to use physical/special categories, attack-vs-defense or special-attack-vs-special-defense, full type chart including immunities, STAB/Tera, accuracy/evasion stages, stat stages, burn/paralysis stat effects, and status-move hooks.
+- Updated battle HUD labels to show dual type chips and move category chips without changing the existing two-button battle flow.
+- Verified direct engine checks: Meowscarada has Grass/Dark, Rotom has Electric/Ghost, Tackle is physical and does 0 damage into Ghost, Flower Trick is physical and uses attack/defense.
+- Verified browser battle path with Playwright: forced Meowscarada vs Rotom battle rendered dual types/category chips, clicking Flower Trick used stat-based damage, HP/logs updated, and no browser console errors were reported.

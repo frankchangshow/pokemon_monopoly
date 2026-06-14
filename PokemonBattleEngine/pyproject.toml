@@ -1,0 +1,9 @@
+[project]
+name = "pokemon-battle-engine"
+version = "0.1.0"
+description = "Deterministic Pokemon battle simulation engine with Paldea data sync tooling."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

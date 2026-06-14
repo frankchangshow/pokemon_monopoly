@@ -3,10 +3,10 @@
  * Integrates assets, sounds, Monopoly engine, and Battle engine to render a dynamic comic-book game.
  */
 
-import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=27';
-import { Sound } from './sound.js?v=27';
-import { GameEngine } from './game.js?v=27';
-import { Battle } from './battle.js?v=27';
+import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=28';
+import { Sound } from './sound.js?v=28';
+import { GameEngine } from './game.js?v=28';
+import { Battle } from './battle.js?v=28';
 
 window.Battle = Battle;
 
@@ -3599,8 +3599,18 @@ class UIManager {
       this.triggerTeraVisuals();
     }
 
+    const renderTypeTags = pokemon => {
+      const types = pokemon.types?.length ? pokemon.types : [pokemon.type];
+      return types.map(type => `<span class="move-type-tag ${type.toLowerCase()}">${type}</span>`).join(" ");
+    };
+    const renderMoveLabel = move => {
+      const category = move.category ? `<span class="move-category-tag">${this.escapeHTML(move.category)}</span>` : "";
+      const power = move.category === "status" || !move.power ? "Status" : move.power;
+      return `<span class="move-type-tag ${move.type.toLowerCase()}">${move.type}</span> ${category} ${this.escapeHTML(move.name)} (${power})`;
+    };
+
     // Player HUD
-    this.playerPokeName.innerHTML = `${battle.player.name} (Lv. ${battle.player.level}) <span class="move-type-tag ${battle.player.type.toLowerCase()}">${battle.player.type}</span>`;
+    this.playerPokeName.innerHTML = `${battle.player.name} (Lv. ${battle.player.level}) ${renderTypeTags(battle.player)}`;
     this.playerHpText.innerText = `${battle.player.hp} / ${battle.player.maxHp} HP`;
     this.playerHpBar.style.width = `${(battle.player.hp / battle.player.maxHp) * 100}%`;
     
@@ -3624,7 +3634,7 @@ class UIManager {
     }
 
     // Enemy HUD
-    this.enemyPokeName.innerHTML = `${battle.enemy.name} (Lv. ${battle.enemy.level}) <span class="move-type-tag ${battle.enemy.type.toLowerCase()}">${battle.enemy.type}</span>`;
+    this.enemyPokeName.innerHTML = `${battle.enemy.name} (Lv. ${battle.enemy.level}) ${renderTypeTags(battle.enemy)}`;
     this.enemyHpText.innerText = `${battle.enemy.hp} / ${battle.enemy.maxHp} HP`;
     this.enemyHpBar.style.width = `${(battle.enemy.hp / battle.enemy.maxHp) * 100}%`;
     
@@ -3650,8 +3660,8 @@ class UIManager {
     // Move names with element labels
     const move0 = battle.player.moves[0];
     const move1 = battle.player.moves[1];
-    this.battleMove0.innerHTML = `<span class="move-type-tag ${move0.type.toLowerCase()}">${move0.type}</span> ${move0.name} (${move0.power})`;
-    this.battleMove1.innerHTML = `<span class="move-type-tag ${move1.type.toLowerCase()}">${move1.type}</span> ${move1.name} (${move1.power})`;
+    this.battleMove0.innerHTML = renderMoveLabel(move0);
+    this.battleMove1.innerHTML = renderMoveLabel(move1);
 
     // Turn indicator
     this.battleMove0.disabled = battle.turn !== 0;
