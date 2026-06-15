@@ -7,6 +7,9 @@ import { PokemonDB, PokemonBattleStats } from './assets.js?v=30';
 import { Sound } from './sound.js?v=30';
 
 const ALL_STATS = ["hp", "attack", "defense", "specialAttack", "specialDefense", "speed"];
+const PLAYER_MIN_MOVE_POWER = 30;
+const PLAYER_DAMAGE_MULTIPLIER = 1.3;
+const ENEMY_DAMAGE_MULTIPLIER = 0.65;
 const PHYSICAL_TYPES = new Set(["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel"]);
 const SPECIAL_TYPES = new Set(["Fire", "Water", "Electric", "Grass", "Ice", "Psychic", "Dragon", "Dark", "Fairy"]);
 const STATUS_MOVE_NAMES = new Set([
@@ -197,7 +200,9 @@ export class BattleEngine {
       spaceId,
       challengerIdx,
       ownerIdx,
-      turn: playerStats.speed >= enemyStats.speed ? 0 : 1, // High speed goes first
+      // In this board-game flow, the human side should get the first decision.
+      // Speed still matters through stats/effects, but losing before acting feels bad.
+      turn: 0,
       logs: [],
       onComplete
     };
@@ -208,7 +213,7 @@ export class BattleEngine {
       this.log(`Trainer Battle initiated! Challenge for rent discount!`);
     }
 
-    // If enemy goes first, schedule AI move
+    // Defensive guard if future rules reintroduce enemy opening turns.
     if (this.activeBattle.turn === 1) {
       setTimeout(() => this.executeEnemyTurn(battleId), 1000);
     }
@@ -332,6 +337,22 @@ export class BattleEngine {
     return offensiveTypes.includes(move.type) ? 1.5 : 1;
   }
 
+  getAdjustedMovePower(attacker, move) {
+    const rawPower = Math.max(0, Number(move.power) || 0);
+    if (!rawPower) return 0;
+    if (this.activeBattle && attacker === this.activeBattle.player) {
+      return Math.max(rawPower, PLAYER_MIN_MOVE_POWER);
+    }
+    return rawPower;
+  }
+
+  getSideDamageMultiplier(attacker) {
+    if (!this.activeBattle) return 1;
+    if (attacker === this.activeBattle.player) return PLAYER_DAMAGE_MULTIPLIER;
+    if (attacker === this.activeBattle.enemy) return ENEMY_DAMAGE_MULTIPLIER;
+    return 1;
+  }
+
   calculateDamage(attacker, defender, move) {
     const category = move.category || this.inferMoveCategory(move);
     if (category === "status" || !move.power) {
@@ -345,10 +366,12 @@ export class BattleEngine {
     const effectiveness = this.getTypeEffectiveness(move.type, this.getDefensiveTypes(defender));
     if (effectiveness === 0) return { damage: 0, effectiveness, notes: ["immune"] };
 
-    const base = (((2 * attacker.level / 5 + 2) * move.power * attack / Math.max(1, defense)) / 50) + 2;
+    const movePower = this.getAdjustedMovePower(attacker, move);
+    const base = (((2 * attacker.level / 5 + 2) * movePower * attack / Math.max(1, defense)) / 50) + 2;
     let damage = base * this.getStabMultiplier(attacker, move) * effectiveness;
     if (attacker.powerUpgrades) damage *= (1 + attacker.powerUpgrades * 0.2);
     if (attacker.terastallized) damage *= 1.15;
+    damage *= this.getSideDamageMultiplier(attacker);
     const variance = 0.85 + Math.random() * 0.3;
     damage = Math.max(1, Math.floor(damage * variance));
     return { damage, effectiveness, notes: [category, `${attackStatName}/${defenseStatName}`] };

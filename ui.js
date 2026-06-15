@@ -4530,9 +4530,9 @@ class UIManager {
         this.enemyHpText.innerText = `${battle.enemy.hp} / ${battle.enemy.maxHp} HP`;
         this.enemyHpBar.style.width = `${(battle.enemy.hp / battle.enemy.maxHp) * 100}%`;
 
-        const lastLog = battle.logs[battle.logs.length - 1];
-        if (lastLog) {
-          this.setBattleLog(lastLog);
+        const recentLogs = battle.logs.slice(-3);
+        if (recentLogs.length) {
+          this.setBattleLog(recentLogs.map(log => this.escapeHTML(log)).join("<br>"));
         }
         this.showBattleEffectFeedback(attackerSide, defenderSide, effectEvent);
       }

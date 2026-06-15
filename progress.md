@@ -56,3 +56,6 @@ Updates:
 - Added structured battle move effects for burn, poison, paralysis, stat buffs, and stat debuffs. Effects now apply from both status moves and damaging move secondary effects, with stage bounds and existing-status guards.
 - Wired effect feedback into the battle UI: status badges appear beside fighter names, status/buff/debuff toasts appear in the action area, and the optional stats popup shows current stat stage modifiers including accuracy/evasion.
 - Verified in browser with a forced battle: Glare applied `PAR`, Leer applied `DEF -1`, the enemy HUD showed `PAR`, the stats popup showed the debuff, and the four battle move buttons rendered.
+- Rebalanced battle feel after official stats made the game too punishing: the human/player side now always gets the opening move, weak player attacks get a minimum battle power, and AI damage is softened.
+- Updated battle log rendering to show recent attack damage and secondary effects together so damage is not hidden by burn/poison/stat messages.
+- Verified with direct engine checks and browser smoke tests: Fuecoco Lv.4 now opens against faster Rotom, Ember deals visible damage from 19 HP to 11 HP, and the log shows both the damage and burn effect.
