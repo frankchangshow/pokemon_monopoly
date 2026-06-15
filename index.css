@@ -1566,6 +1566,34 @@ body {
   color: #000;
 }
 
+.center-action-toast.status {
+  background: #34495E;
+  color: #FFF;
+}
+
+.center-action-toast.status.burn {
+  background: #E67E22;
+}
+
+.center-action-toast.status.poison {
+  background: #8E44AD;
+}
+
+.center-action-toast.status.paralysis {
+  background: #F1C40F;
+  color: #000;
+}
+
+.center-action-toast.buff {
+  background: #27AE60;
+  color: #FFF;
+}
+
+.center-action-toast.debuff {
+  background: #3498DB;
+  color: #FFF;
+}
+
 @keyframes centerToastPop {
   0% { opacity: 0; transform: translate(-50%, -35%) scale(0.75) rotate(-2deg); }
   15% { opacity: 1; transform: translate(-50%, -50%) scale(1.08) rotate(1deg); }
@@ -2269,6 +2297,57 @@ body {
   font-size: 0.95rem;
   color: var(--text-dark);
   line-height: 1;
+}
+
+.battle-stat-stage {
+  margin-top: 3px;
+  padding: 1px 6px;
+  border: 2px solid #000;
+  border-radius: 999px;
+  box-shadow: 1px 1px 0 #000;
+  font-family: var(--font-title);
+  font-size: 0.72rem;
+  font-style: normal;
+  line-height: 1.1;
+}
+
+.battle-stat-stage.positive {
+  background: #2ECC71;
+  color: #FFF;
+}
+
+.battle-stat-stage.negative {
+  background: #3498DB;
+  color: #FFF;
+}
+
+.battle-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  margin-left: 4px;
+  padding: 2px 7px;
+  border: 2px solid #000;
+  border-radius: 999px;
+  box-shadow: 1px 1px 0 #000;
+  font-family: var(--font-title);
+  font-size: 0.72rem;
+  line-height: 1;
+  color: #FFF;
+}
+
+.battle-status-badge.burn {
+  background: #E67E22;
+}
+
+.battle-status-badge.poison {
+  background: #8E44AD;
+}
+
+.battle-status-badge.paralysis {
+  background: #F1C40F;
+  color: #000;
 }
 
 .battle-name {

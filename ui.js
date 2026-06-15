@@ -122,6 +122,8 @@ class UIManager {
     
     this.battleMove0 = document.getElementById("move-btn-0");
     this.battleMove1 = document.getElementById("move-btn-1");
+    this.battleMove2 = document.getElementById("move-btn-2");
+    this.battleMove3 = document.getElementById("move-btn-3");
     this.battleTeraBtn = document.getElementById("terastallize-btn");
     this.battleLogText = document.getElementById("battle-log-text");
     this.battleStatsToggleBtn = document.getElementById("battle-stats-toggle-btn");
@@ -227,8 +229,8 @@ class UIManager {
     this.setupEventListeners();
 
     // Bind battle callback for combat animations & chiptune audio
-    Battle.onMoveExecuted = (attacker, defender, move, effectiveness, damage) => {
-      this.animateCombatMove(attacker, defender, move, effectiveness, damage);
+    Battle.onMoveExecuted = (attacker, defender, move, effectiveness, damage, effectEvent) => {
+      this.animateCombatMove(attacker, defender, move, effectiveness, damage, effectEvent);
     };
   }
 
@@ -453,6 +455,8 @@ class UIManager {
     // Battle options
     this.battleMove0.addEventListener("click", () => this.handlePlayerBattleMove(0));
     this.battleMove1.addEventListener("click", () => this.handlePlayerBattleMove(1));
+    if (this.battleMove2) this.battleMove2.addEventListener("click", () => this.handlePlayerBattleMove(2));
+    if (this.battleMove3) this.battleMove3.addEventListener("click", () => this.handlePlayerBattleMove(3));
     
     this.battleTeraBtn.addEventListener("click", () => {
       Battle.terastallizePlayer();
@@ -3597,6 +3601,8 @@ class UIManager {
     this.combatAnimating = false;
     this.battleMove0.disabled = false;
     this.battleMove1.disabled = false;
+    if (this.battleMove2) this.battleMove2.disabled = false;
+    if (this.battleMove3) this.battleMove3.disabled = false;
     this.playerBattleSprite.classList.remove("strike-player", "strike-enemy", "shake", "tera-active");
     this.enemyBattleSprite.classList.remove("strike-player", "strike-enemy", "shake", "tera-active");
     this.playerBattleSprite.className = "battle-sprite-container";
@@ -3624,6 +3630,11 @@ class UIManager {
       const types = pokemon.types?.length ? pokemon.types : [pokemon.type];
       return types.map(type => `<span class="move-type-tag ${type.toLowerCase()}">${type}</span>`).join(" ");
     };
+    const renderStatusBadge = pokemon => {
+      if (!pokemon.status) return "";
+      const status = this.escapeHTML(pokemon.status);
+      return `<span class="battle-status-badge ${status}">${this.formatBattleStatus(status)}</span>`;
+    };
     const renderMoveLabel = move => {
       const category = move.category ? `<span class="move-category-tag">${this.escapeHTML(move.category)}</span>` : "";
       const power = move.category === "status" || !move.power ? "Status" : move.power;
@@ -3631,7 +3642,7 @@ class UIManager {
     };
 
     // Player HUD
-    this.playerPokeName.innerHTML = `${battle.player.name} (Lv. ${battle.player.level}) ${renderTypeTags(battle.player)}`;
+    this.playerPokeName.innerHTML = `${battle.player.name} (Lv. ${battle.player.level}) ${renderTypeTags(battle.player)} ${renderStatusBadge(battle.player)}`;
     this.playerHpText.innerText = `${battle.player.hp} / ${battle.player.maxHp} HP`;
     this.playerHpBar.style.width = `${(battle.player.hp / battle.player.maxHp) * 100}%`;
     
@@ -3655,7 +3666,7 @@ class UIManager {
     }
 
     // Enemy HUD
-    this.enemyPokeName.innerHTML = `${battle.enemy.name} (Lv. ${battle.enemy.level}) ${renderTypeTags(battle.enemy)}`;
+    this.enemyPokeName.innerHTML = `${battle.enemy.name} (Lv. ${battle.enemy.level}) ${renderTypeTags(battle.enemy)} ${renderStatusBadge(battle.enemy)}`;
     this.enemyHpText.innerText = `${battle.enemy.hp} / ${battle.enemy.maxHp} HP`;
     this.enemyHpBar.style.width = `${(battle.enemy.hp / battle.enemy.maxHp) * 100}%`;
     
@@ -3679,14 +3690,24 @@ class UIManager {
     }
 
     // Move names with element labels
-    const move0 = battle.player.moves[0];
-    const move1 = battle.player.moves[1];
-    this.battleMove0.innerHTML = renderMoveLabel(move0);
-    this.battleMove1.innerHTML = renderMoveLabel(move1);
+    const moveButtons = [this.battleMove0, this.battleMove1, this.battleMove2, this.battleMove3];
+    moveButtons.forEach((button, idx) => {
+      if (!button) return;
+      const move = battle.player.moves[idx];
+      if (move) {
+        button.style.display = "flex";
+        button.innerHTML = renderMoveLabel(move);
+        button.disabled = battle.turn !== 0;
+      } else {
+        button.style.display = "none";
+      }
+    });
 
     // Turn indicator
     this.battleMove0.disabled = battle.turn !== 0;
     this.battleMove1.disabled = battle.turn !== 0;
+    if (this.battleMove2) this.battleMove2.disabled = battle.turn !== 0 || !battle.player.moves[2];
+    if (this.battleMove3) this.battleMove3.disabled = battle.turn !== 0 || !battle.player.moves[3];
 
     if (this.battleStatsOverlay && getComputedStyle(this.battleStatsOverlay).display !== "none") {
       this.toggleBattleStatsOverlay(true);
@@ -3708,14 +3729,22 @@ class UIManager {
     if (!battle) return;
     const renderStatPanel = pokemon => {
       const stats = pokemon.stats || {};
+      const stages = pokemon.statStages || {};
       const statRows = [
-        ["HP", stats.hp],
-        ["ATK", stats.attack],
-        ["DEF", stats.defense],
-        ["SPA", stats.specialAttack],
-        ["SPD", stats.specialDefense],
-        ["SPE", stats.speed]
-      ].map(([label, value]) => `<div class="battle-stat-pill"><span>${label}</span><strong>${Number.isFinite(value) ? value : "--"}</strong></div>`).join("");
+        ["HP", stats.hp, null],
+        ["ATK", stats.attack, "attack"],
+        ["DEF", stats.defense, "defense"],
+        ["SPA", stats.specialAttack, "specialAttack"],
+        ["SPD", stats.specialDefense, "specialDefense"],
+        ["SPE", stats.speed, "speed"],
+        ["ACC", 100, "accuracy"],
+        ["EVA", 0, "evasion"]
+      ].map(([label, value, statKey]) => {
+        const stage = statKey ? Number(stages[statKey] || 0) : 0;
+        const stageClass = stage > 0 ? "positive" : stage < 0 ? "negative" : "neutral";
+        const stageText = statKey && stage !== 0 ? `<em class="battle-stat-stage ${stageClass}">${stage > 0 ? "+" : ""}${stage}</em>` : "";
+        return `<div class="battle-stat-pill"><span>${label}</span><strong>${Number.isFinite(value) ? value : "--"}</strong>${stageText}</div>`;
+      }).join("");
       return `<div class="battle-stat-grid">${statRows}</div>`;
     };
     if (this.playerBattleStatsName) {
@@ -3749,6 +3778,7 @@ class UIManager {
   handlePlayerBattleMove(moveIdx) {
     const battle = Battle.activeBattle;
     if (!battle || battle.turn !== 0 || this.combatAnimating) return;
+    if (!battle.player.moves[moveIdx]) return;
 
     Battle.executePlayerMove(moveIdx);
   }
@@ -4280,11 +4310,18 @@ class UIManager {
     if (!player) return defaultMoves;
     const normName = this.game.normalizePokemonName(player, pokemonName);
     const isPartner = normName === player.baseStarter;
-    if (!isPartner || !Array.isArray(player.partnerMoves) || player.partnerMoves.length < 2) {
-      return defaultMoves;
+    if (!isPartner || !Array.isArray(player.partnerMoves) || player.partnerMoves.length === 0) {
+      return defaultMoves.slice(0, 4);
     }
     const savedMoves = player.partnerMoves.map(move => ({ ...move }));
-    return [savedMoves[0] || defaultMoves[0], savedMoves[1] || defaultMoves[1]].filter(Boolean);
+    const moveCount = Math.max(defaultMoves.length, savedMoves.length, 4);
+    const resolved = [];
+    for (let idx = 0; idx < moveCount; idx++) {
+      const savedMove = savedMoves[idx];
+      const defaultMove = defaultMoves[idx];
+      if (savedMove || defaultMove) resolved.push(savedMove || defaultMove);
+    }
+    return resolved.slice(0, 4);
   }
 
   showMoveLearnModal(tradedIdx) {
@@ -4390,7 +4427,51 @@ class UIManager {
     this.updateUI();
   }
 
-  animateCombatMove(attackerSide, defenderSide, move, effectiveness, damage) {
+  formatBattleStatus(status) {
+    if (status === "burn") return "BRN";
+    if (status === "poison") return "PSN";
+    if (status === "paralysis") return "PAR";
+    return String(status || "").slice(0, 3).toUpperCase();
+  }
+
+  formatBattleEffectWord(event) {
+    if (!event) return "";
+    if (event.kind === "status") {
+      if (event.status === "burn") return "BURNED!";
+      if (event.status === "poison") return "POISONED!";
+      if (event.status === "paralysis") return "PARALYZED!";
+      return "STATUS!";
+    }
+    if (event.kind === "stat") {
+      const labels = {
+        attack: "ATK",
+        defense: "DEF",
+        specialAttack: "SP. ATK",
+        specialDefense: "SP. DEF",
+        speed: "SPEED",
+        accuracy: "ACC",
+        evasion: "EVA"
+      };
+      return `${labels[event.stat] || "STAT"} ${event.amount > 0 ? "UP" : "DOWN"}!`;
+    }
+    return event.text || "";
+  }
+
+  showBattleEffectFeedback(attackerSide, defenderSide, effectEvent = {}) {
+    const events = Array.isArray(effectEvent.effects) ? effectEvent.effects : [];
+    events.forEach((event, idx) => {
+      if (event.kind !== "status" && event.kind !== "stat") return;
+      const side = event.target === "attacker" ? attackerSide : defenderSide;
+      const word = this.formatBattleEffectWord(event);
+      setTimeout(() => {
+        this.showActionTextPopup(side, word);
+        const variant = event.kind === "status" ? `status ${event.status || ""}` : event.amount > 0 ? "buff" : "debuff";
+        this.showCenterActionToast(event.text, variant, this.battleOverlay);
+      }, 120 * idx);
+    });
+  }
+
+  animateCombatMove(attackerSide, defenderSide, move, effectiveness, damage, effectEvent = {}) {
     this.combatAnimating = true;
 
     // Determine DOM elements based on sides
@@ -4398,8 +4479,9 @@ class UIManager {
     const defenderSprite = defenderSide === "player" ? this.playerBattleSprite : this.enemyBattleSprite;
 
     // Disable move buttons during animation
-    this.battleMove0.disabled = true;
-    this.battleMove1.disabled = true;
+    [this.battleMove0, this.battleMove1, this.battleMove2, this.battleMove3].forEach(button => {
+      if (button) button.disabled = true;
+    });
 
     // 1. Attack / Lunge Phase (0ms)
     const lungeClass = attackerSide === "player" ? "strike-player" : "strike-enemy";
@@ -4414,8 +4496,8 @@ class UIManager {
     else if (effectiveness === 0) word = "NO EFFECT!";
     else if (effectiveness < 1.0) word = "NOT EFFECTIVE";
     this.showActionTextPopup(attackerSide, word);
-    this.showDamageNumber(defenderSide, damage);
-    if (attackerSide === "player") {
+    if (damage > 0) this.showDamageNumber(defenderSide, damage);
+    if (attackerSide === "player" && damage > 0) {
       this.showCenterActionToast(`${move.name}: ${damage} damage!`, effectiveness > 1 ? "damage super" : "damage", this.battleOverlay);
     }
 
@@ -4452,6 +4534,7 @@ class UIManager {
         if (lastLog) {
           this.setBattleLog(lastLog);
         }
+        this.showBattleEffectFeedback(attackerSide, defenderSide, effectEvent);
       }
     }, 150);
 

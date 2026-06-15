@@ -3,8 +3,8 @@
  * Core state machine for player turns, board movements, real-estate, cards, trading, and mortgaging.
  */
 
-import { BoardSpaces, AcademyCards, TeraRaidCards } from './assets.js?v=29';
-import { Sound } from './sound.js?v=29';
+import { BoardSpaces, AcademyCards, TeraRaidCards } from './assets.js?v=30';
+import { Sound } from './sound.js?v=30';
 
 export class GameEngine {
   constructor() {

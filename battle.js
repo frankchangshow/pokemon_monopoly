@@ -3,8 +3,8 @@
  * Handles move execution, type matchups, CPU AI, logs, Terastallization, and resolution callbacks.
  */
 
-import { PokemonDB, PokemonBattleStats } from './assets.js?v=29';
-import { Sound } from './sound.js?v=29';
+import { PokemonDB, PokemonBattleStats } from './assets.js?v=30';
+import { Sound } from './sound.js?v=30';
 
 const ALL_STATS = ["hp", "attack", "defense", "specialAttack", "specialDefense", "speed"];
 const PHYSICAL_TYPES = new Set(["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel"]);
@@ -12,6 +12,41 @@ const SPECIAL_TYPES = new Set(["Fire", "Water", "Electric", "Grass", "Ice", "Psy
 const STATUS_MOVE_NAMES = new Set([
   "Glare", "Leer", "String Shot", "Hone Claws", "Work Up", "Worry Seed"
 ]);
+const STATUS_EFFECTS_BY_MOVE = {
+  "Ember": [{ target: "defender", status: "burn", chance: 0.1 }],
+  "Fire Fang": [{ target: "defender", status: "burn", chance: 0.1 }],
+  "Flame Wheel": [{ target: "defender", status: "burn", chance: 0.1 }],
+  "Glare": [{ target: "defender", status: "paralysis", chance: 1 }],
+  "Gunk Shot": [{ target: "defender", status: "poison", chance: 0.3 }],
+  "Poison Jab": [{ target: "defender", status: "poison", chance: 0.3 }],
+  "Sludge Wave": [{ target: "defender", status: "poison", chance: 0.1 }],
+  "Spark": [{ target: "defender", status: "paralysis", chance: 0.3 }],
+  "Thunder Shock": [{ target: "defender", status: "paralysis", chance: 0.1 }]
+};
+const STAT_EFFECTS_BY_MOVE = {
+  "Acid Spray": [{ target: "defender", stat: "specialDefense", amount: -2, chance: 1 }],
+  "Aqua Step": [{ target: "attacker", stat: "speed", amount: 1, chance: 1 }],
+  "Close Combat": [
+    { target: "attacker", stat: "defense", amount: -1, chance: 1 },
+    { target: "attacker", stat: "specialDefense", amount: -1, chance: 1 }
+  ],
+  "Hone Claws": [
+    { target: "attacker", stat: "attack", amount: 1, chance: 1 },
+    { target: "attacker", stat: "accuracy", amount: 1, chance: 1 }
+  ],
+  "Leer": [{ target: "defender", stat: "defense", amount: -1, chance: 1 }],
+  "Metal Claw": [{ target: "attacker", stat: "attack", amount: 1, chance: 0.1 }],
+  "Mud-Slap": [{ target: "defender", stat: "accuracy", amount: -1, chance: 1 }],
+  "Overheat": [{ target: "attacker", stat: "specialAttack", amount: -2, chance: 1 }],
+  "Play Rough": [{ target: "defender", stat: "attack", amount: -1, chance: 0.1 }],
+  "Shadow Ball": [{ target: "defender", stat: "specialDefense", amount: -1, chance: 0.2 }],
+  "String Shot": [{ target: "defender", stat: "speed", amount: -1, chance: 1 }],
+  "Torch Song": [{ target: "attacker", stat: "specialAttack", amount: 1, chance: 1 }],
+  "Work Up": [
+    { target: "attacker", stat: "attack", amount: 1, chance: 1 },
+    { target: "attacker", stat: "specialAttack", amount: 1, chance: 1 }
+  ]
+};
 const MOVE_CATEGORY_OVERRIDES = {
   "Absorb": "special",
   "Acid Spray": "special",
@@ -185,6 +220,10 @@ export class BattleEngine {
     }
   }
 
+  shouldLogBattleNote(note) {
+    return Boolean(note) && !["physical", "special", "status"].includes(note) && !note.includes("/");
+  }
+
   createStatStages() {
     return { attack: 0, defense: 0, specialAttack: 0, specialDefense: 0, speed: 0, accuracy: 0, evasion: 0 };
   }
@@ -322,23 +361,83 @@ export class BattleEngine {
     return Math.random() * 100 < modified;
   }
 
-  applyStatusMove(attacker, defender, move) {
-    const name = move.name;
-    const changes = [];
-    if (name === "Leer") changes.push({ target: defender, stat: "defense", amount: -1 });
-    if (name === "String Shot") changes.push({ target: defender, stat: "speed", amount: -1 });
-    if (name === "Hone Claws") changes.push({ target: attacker, stat: "attack", amount: 1 }, { target: attacker, stat: "accuracy", amount: 1 });
-    if (name === "Work Up") changes.push({ target: attacker, stat: "attack", amount: 1 }, { target: attacker, stat: "specialAttack", amount: 1 });
-    if (name === "Glare" && !defender.status) {
-      defender.status = "paralysis";
-      return [`${defender.name} was paralyzed!`];
+  applyMoveEffects(attacker, defender, move, effectiveness = 1) {
+    if (effectiveness === 0) return [];
+    const events = [];
+    const resolveTarget = target => target === "attacker" ? attacker : defender;
+    const resolveSide = target => target === "attacker" ? "attacker" : "defender";
+
+    for (const effect of STATUS_EFFECTS_BY_MOVE[move.name] || []) {
+      if (Math.random() > (effect.chance ?? 1)) continue;
+      const target = resolveTarget(effect.target);
+      if (target.status) {
+        events.push({
+          kind: "status-blocked",
+          target: resolveSide(effect.target),
+          targetName: target.name,
+          status: target.status,
+          text: `${target.name} already has a status condition!`
+        });
+        continue;
+      }
+      target.status = effect.status;
+      events.push({
+        kind: "status",
+        target: resolveSide(effect.target),
+        targetName: target.name,
+        status: effect.status,
+        text: `${target.name} was ${this.formatStatusApplied(effect.status)}!`
+      });
     }
-    const notes = [];
-    for (const change of changes) {
-      change.target.statStages[change.stat] = Math.max(-6, Math.min(6, (change.target.statStages[change.stat] || 0) + change.amount));
-      notes.push(`${change.target.name}'s ${change.stat} ${change.amount > 0 ? "rose" : "fell"}!`);
+
+    for (const effect of STAT_EFFECTS_BY_MOVE[move.name] || []) {
+      if (Math.random() > (effect.chance ?? 1)) continue;
+      const target = resolveTarget(effect.target);
+      const current = target.statStages[effect.stat] || 0;
+      const next = Math.max(-6, Math.min(6, current + effect.amount));
+      if (next === current) {
+        events.push({
+          kind: "stat-blocked",
+          target: resolveSide(effect.target),
+          targetName: target.name,
+          stat: effect.stat,
+          amount: 0,
+          text: `${target.name}'s ${this.formatStatName(effect.stat)} won't go ${effect.amount > 0 ? "higher" : "lower"}!`
+        });
+        continue;
+      }
+      target.statStages[effect.stat] = next;
+      events.push({
+        kind: "stat",
+        target: resolveSide(effect.target),
+        targetName: target.name,
+        stat: effect.stat,
+        amount: next - current,
+        text: `${target.name}'s ${this.formatStatName(effect.stat)} ${effect.amount > 0 ? "rose" : "fell"}!`
+      });
     }
-    return notes.length ? notes : [`${attacker.name} used ${move.name}!`];
+
+    return events;
+  }
+
+  formatStatusApplied(status) {
+    if (status === "burn") return "burned";
+    if (status === "poison") return "poisoned";
+    if (status === "paralysis") return "paralyzed";
+    return status;
+  }
+
+  formatStatName(stat) {
+    const labels = {
+      attack: "Attack",
+      defense: "Defense",
+      specialAttack: "Sp. Atk",
+      specialDefense: "Sp. Def",
+      speed: "Speed",
+      accuracy: "Accuracy",
+      evasion: "Evasion"
+    };
+    return labels[stat] || stat;
   }
 
   terastallizePlayer() {
@@ -364,7 +463,7 @@ export class BattleEngine {
 
     if (!this.moveHits(player, enemy, move)) {
       this.log(`${player.name} used ${move.name}, but it missed!`);
-      if (this.onMoveExecuted) this.onMoveExecuted("player", "enemy", move, 1, 0);
+      if (this.onMoveExecuted) this.onMoveExecuted("player", "enemy", move, 1, 0, { missed: true, effects: [] });
       this.activeBattle.turn = 1;
       const battleId = this.activeBattle.id;
       setTimeout(() => this.executeEnemyTurn(battleId), 1000);
@@ -373,9 +472,7 @@ export class BattleEngine {
 
     const { damage, effectiveness, notes } = this.calculateDamage(player, enemy, move);
     enemy.hp = Math.max(0, enemy.hp - damage);
-    const statusNotes = damage === 0 && (move.category || this.inferMoveCategory(move)) === "status"
-      ? this.applyStatusMove(player, enemy, move)
-      : [];
+    const effectEvents = this.applyMoveEffects(player, enemy, move, effectiveness);
 
     // Play sound effects
     if (effectiveness > 1.0) {
@@ -387,11 +484,11 @@ export class BattleEngine {
     } else {
       this.log(`💥 ${player.name} used ${move.name}! Enemy took ${damage} damage.`);
     }
-    [...notes, ...statusNotes].filter(note => note && !["physical", "special", "status"].includes(note)).forEach(note => this.log(`• ${note}`));
+    [...notes, ...effectEvents.map(event => event.text)].filter(note => this.shouldLogBattleNote(note)).forEach(note => this.log(`• ${note}`));
 
     // Trigger callback to handle visuals/audio in UI
     if (this.onMoveExecuted) {
-      this.onMoveExecuted("player", "enemy", move, effectiveness, damage);
+      this.onMoveExecuted("player", "enemy", move, effectiveness, damage, { missed: false, effects: effectEvents });
     }
 
     // Check Faint
@@ -419,22 +516,19 @@ export class BattleEngine {
     }
 
     // Choose move (AI favors stronger moves, or pick random)
-    const moveIdx = Math.random() < 0.4 ? 1 : 0;
-    const move = enemy.moves[moveIdx];
+    const move = enemy.moves[Math.floor(Math.random() * enemy.moves.length)];
     if (!move) return;
 
     if (!this.moveHits(enemy, player, move)) {
       this.log(`Enemy ${enemy.name} used ${move.name}, but it missed!`);
-      if (this.onMoveExecuted) this.onMoveExecuted("enemy", "player", move, 1, 0);
+      if (this.onMoveExecuted) this.onMoveExecuted("enemy", "player", move, 1, 0, { missed: true, effects: [] });
       this.activeBattle.turn = 0;
       return;
     }
 
     const { damage, effectiveness, notes } = this.calculateDamage(enemy, player, move);
     player.hp = Math.max(0, player.hp - damage);
-    const statusNotes = damage === 0 && (move.category || this.inferMoveCategory(move)) === "status"
-      ? this.applyStatusMove(enemy, player, move)
-      : [];
+    const effectEvents = this.applyMoveEffects(enemy, player, move, effectiveness);
 
     if (effectiveness > 1.0) {
       this.log(`💥 Enemy ${enemy.name} used ${move.name}! It's super effective! Your Pokemon took ${damage} damage.`);
@@ -445,11 +539,11 @@ export class BattleEngine {
     } else {
       this.log(`💥 Enemy ${enemy.name} used ${move.name}! Your Pokemon took ${damage} damage.`);
     }
-    [...notes, ...statusNotes].filter(note => note && !["physical", "special", "status"].includes(note)).forEach(note => this.log(`• ${note}`));
+    [...notes, ...effectEvents.map(event => event.text)].filter(note => this.shouldLogBattleNote(note)).forEach(note => this.log(`• ${note}`));
 
     // Trigger callback to handle visuals/audio in UI
     if (this.onMoveExecuted) {
-      this.onMoveExecuted("enemy", "player", move, effectiveness, damage);
+      this.onMoveExecuted("enemy", "player", move, effectiveness, damage, { missed: false, effects: effectEvents });
     }
 
     if (player.hp === 0) {

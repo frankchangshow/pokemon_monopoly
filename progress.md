@@ -53,3 +53,6 @@ Updates:
 - Verified the new stat panel in browser: Meowscarada vs Rotom battle rendered both stat cards, values matched the engine state, and no browser console errors were reported.
 - Reworked the battle stat display into an optional pop-up opened by a `STATS` button in the battle HUD. The main battle screen is back to the cleaner layout, and the modal reuses the live stat data on demand.
 - Verified the stats popup in browser: battle HUD stayed clean by default, the modal opened with both fighters' stats, and no browser console errors were reported.
+- Added structured battle move effects for burn, poison, paralysis, stat buffs, and stat debuffs. Effects now apply from both status moves and damaging move secondary effects, with stage bounds and existing-status guards.
+- Wired effect feedback into the battle UI: status badges appear beside fighter names, status/buff/debuff toasts appear in the action area, and the optional stats popup shows current stat stage modifiers including accuracy/evasion.
+- Verified in browser with a forced battle: Glare applied `PAR`, Leer applied `DEF -1`, the enemy HUD showed `PAR`, the stats popup showed the debuff, and the four battle move buttons rendered.
