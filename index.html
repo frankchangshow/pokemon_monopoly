@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pokémon Monopoly: Paldea Edition</title>
-  <link rel="stylesheet" href="index.css?v=29">
+  <link rel="stylesheet" href="index.css?v=30">
 </head>
 <body>
 
@@ -173,11 +173,11 @@
             <span id="player-poke-name">Sprigatito</span>
             <span id="player-poke-tera" style="font-size: 0.75rem; color:#8E44AD; display:none;">TERA</span>
           </div>
-          <div class="battle-stat-panel" id="player-battle-stats"></div>
           <div class="hp-bar-bg">
             <div class="hp-bar-fill" id="player-hp-bar"></div>
           </div>
           <div class="hp-text" id="player-hp-text">100 / 100 HP</div>
+          <button class="battle-stats-toggle" id="battle-stats-toggle-btn" type="button">STATS</button>
         </div>
       </div>
 
@@ -189,7 +189,6 @@
             <span id="enemy-poke-name">Lechonk</span>
             <span id="enemy-poke-tera" style="font-size: 0.75rem; color:#F1C40F; display:none;">TERA</span>
           </div>
-          <div class="battle-stat-panel" id="enemy-battle-stats"></div>
           <div class="hp-bar-bg">
             <div class="hp-bar-fill" id="enemy-hp-bar"></div>
           </div>
@@ -207,6 +206,25 @@
       </div>
       <div class="battle-log-box" id="battle-log-text">
         A wild Pokémon appeared! Get ready to battle!
+      </div>
+    </div>
+  </div>
+
+  <div class="battle-stats-overlay" id="battle-stats-overlay" style="display:none;">
+    <div class="battle-stats-modal">
+      <div class="battle-stats-modal-header">
+        <div class="battle-stats-modal-title">BATTLE STATS</div>
+        <button class="btn-comic battle-stats-close" id="battle-stats-close-btn" type="button">CLOSE</button>
+      </div>
+      <div class="battle-stats-modal-body">
+        <div class="battle-stats-card">
+          <div class="battle-stats-card-name" id="player-battle-stats-name">Player</div>
+          <div class="battle-stat-grid" id="player-battle-stats"></div>
+        </div>
+        <div class="battle-stats-card">
+          <div class="battle-stats-card-name" id="enemy-battle-stats-name">Enemy</div>
+          <div class="battle-stat-grid" id="enemy-battle-stats"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -352,6 +370,6 @@
   </div>
 
   <!-- Core Javascript code -->
-  <script type="module" src="ui.js?v=29"></script>
+  <script type="module" src="ui.js?v=30"></script>
 </body>
 </html>

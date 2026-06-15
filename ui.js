@@ -3,10 +3,10 @@
  * Integrates assets, sounds, Monopoly engine, and Battle engine to render a dynamic comic-book game.
  */
 
-import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=29';
-import { Sound } from './sound.js?v=29';
-import { GameEngine } from './game.js?v=29';
-import { Battle } from './battle.js?v=29';
+import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=30';
+import { Sound } from './sound.js?v=30';
+import { GameEngine } from './game.js?v=30';
+import { Battle } from './battle.js?v=30';
 
 window.Battle = Battle;
 
@@ -124,6 +124,13 @@ class UIManager {
     this.battleMove1 = document.getElementById("move-btn-1");
     this.battleTeraBtn = document.getElementById("terastallize-btn");
     this.battleLogText = document.getElementById("battle-log-text");
+    this.battleStatsToggleBtn = document.getElementById("battle-stats-toggle-btn");
+    this.battleStatsOverlay = document.getElementById("battle-stats-overlay");
+    this.battleStatsCloseBtn = document.getElementById("battle-stats-close-btn");
+    this.playerBattleStats = document.getElementById("player-battle-stats");
+    this.enemyBattleStats = document.getElementById("enemy-battle-stats");
+    this.playerBattleStatsName = document.getElementById("player-battle-stats-name");
+    this.enemyBattleStatsName = document.getElementById("enemy-battle-stats-name");
 
     // Pokemon Selection Modal DOM
     this.pokemonSelectionOverlay = document.getElementById("pokemon-selection-overlay");
@@ -453,6 +460,17 @@ class UIManager {
       this.battleTeraBtn.disabled = true;
       this.updateBattleHUDs();
     });
+    if (this.battleStatsToggleBtn) {
+      this.battleStatsToggleBtn.addEventListener("click", () => this.toggleBattleStatsOverlay(true));
+    }
+    if (this.battleStatsCloseBtn) {
+      this.battleStatsCloseBtn.addEventListener("click", () => this.toggleBattleStatsOverlay(false));
+    }
+    if (this.battleStatsOverlay) {
+      this.battleStatsOverlay.addEventListener("click", event => {
+        if (event.target === this.battleStatsOverlay) this.toggleBattleStatsOverlay(false);
+      });
+    }
 
     // Catch mini-game ball selectors
     const selectBall = (ballType) => {
@@ -3583,6 +3601,7 @@ class UIManager {
     this.enemyBattleSprite.classList.remove("strike-player", "strike-enemy", "shake", "tera-active");
     this.playerBattleSprite.className = "battle-sprite-container";
     this.enemyBattleSprite.className = "battle-sprite-container";
+    this.toggleBattleStatsOverlay(false);
   }
 
   updateBattleHUDs() {
@@ -3610,22 +3629,9 @@ class UIManager {
       const power = move.category === "status" || !move.power ? "Status" : move.power;
       return `<span class="move-type-tag ${move.type.toLowerCase()}">${move.type}</span> ${category} ${this.escapeHTML(move.name)} (${power})`;
     };
-    const renderStatPanel = pokemon => {
-      const stats = pokemon.stats || {};
-      const statRows = [
-        ["HP", stats.hp],
-        ["ATK", stats.attack],
-        ["DEF", stats.defense],
-        ["SPA", stats.specialAttack],
-        ["SPD", stats.specialDefense],
-        ["SPE", stats.speed]
-      ].map(([label, value]) => `<div class="battle-stat-pill"><span>${label}</span><strong>${Number.isFinite(value) ? value : "--"}</strong></div>`).join("");
-      return `<div class="battle-stat-grid">${statRows}</div>`;
-    };
 
     // Player HUD
     this.playerPokeName.innerHTML = `${battle.player.name} (Lv. ${battle.player.level}) ${renderTypeTags(battle.player)}`;
-    if (this.playerBattleStats) this.playerBattleStats.innerHTML = renderStatPanel(battle.player);
     this.playerHpText.innerText = `${battle.player.hp} / ${battle.player.maxHp} HP`;
     this.playerHpBar.style.width = `${(battle.player.hp / battle.player.maxHp) * 100}%`;
     
@@ -3650,7 +3656,6 @@ class UIManager {
 
     // Enemy HUD
     this.enemyPokeName.innerHTML = `${battle.enemy.name} (Lv. ${battle.enemy.level}) ${renderTypeTags(battle.enemy)}`;
-    if (this.enemyBattleStats) this.enemyBattleStats.innerHTML = renderStatPanel(battle.enemy);
     this.enemyHpText.innerText = `${battle.enemy.hp} / ${battle.enemy.maxHp} HP`;
     this.enemyHpBar.style.width = `${(battle.enemy.hp / battle.enemy.maxHp) * 100}%`;
     
@@ -3682,10 +3687,46 @@ class UIManager {
     // Turn indicator
     this.battleMove0.disabled = battle.turn !== 0;
     this.battleMove1.disabled = battle.turn !== 0;
+
+    if (this.battleStatsOverlay && getComputedStyle(this.battleStatsOverlay).display !== "none") {
+      this.toggleBattleStatsOverlay(true);
+    }
   }
 
   setBattleLog(msg) {
     this.battleLogText.innerHTML = msg;
+  }
+
+  toggleBattleStatsOverlay(forceOpen = null) {
+    if (!this.battleStatsOverlay) return;
+    const shouldOpen = forceOpen === null ? this.battleStatsOverlay.style.display === "none" : forceOpen;
+    if (!shouldOpen) {
+      this.battleStatsOverlay.style.display = "none";
+      return;
+    }
+    const battle = Battle.activeBattle;
+    if (!battle) return;
+    const renderStatPanel = pokemon => {
+      const stats = pokemon.stats || {};
+      const statRows = [
+        ["HP", stats.hp],
+        ["ATK", stats.attack],
+        ["DEF", stats.defense],
+        ["SPA", stats.specialAttack],
+        ["SPD", stats.specialDefense],
+        ["SPE", stats.speed]
+      ].map(([label, value]) => `<div class="battle-stat-pill"><span>${label}</span><strong>${Number.isFinite(value) ? value : "--"}</strong></div>`).join("");
+      return `<div class="battle-stat-grid">${statRows}</div>`;
+    };
+    if (this.playerBattleStatsName) {
+      this.playerBattleStatsName.innerHTML = `${battle.player.name} (Lv. ${battle.player.level})`;
+    }
+    if (this.enemyBattleStatsName) {
+      this.enemyBattleStatsName.innerHTML = `${battle.enemy.name} (Lv. ${battle.enemy.level})`;
+    }
+    if (this.playerBattleStats) this.playerBattleStats.innerHTML = renderStatPanel(battle.player);
+    if (this.enemyBattleStats) this.enemyBattleStats.innerHTML = renderStatPanel(battle.enemy);
+    this.battleStatsOverlay.style.display = "flex";
   }
 
   triggerTeraVisuals() {

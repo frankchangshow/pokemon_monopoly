@@ -2162,14 +2162,85 @@ body {
   color: var(--text-dark);
 }
 
-.battle-stat-panel {
-  margin: 8px 0 10px 0;
+.battle-stats-toggle {
+  margin-top: 8px;
+  align-self: flex-end;
+  background: var(--accent-blue);
+  color: #FFF;
+  border: 2px solid #000;
+  border-radius: 8px;
+  box-shadow: 2px 2px 0 #000;
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.battle-stats-toggle:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.battle-stats-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+  padding: 16px;
+}
+
+.battle-stats-modal {
+  width: min(680px, 96vw);
+  background: #FFF;
+  border: 4px solid #000;
+  border-radius: 18px;
+  box-shadow: 8px 8px 0 #000;
+  padding: 16px;
+}
+
+.battle-stats-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.battle-stats-modal-title {
+  font-family: var(--font-title);
+  font-size: 1.7rem;
+  color: var(--accent-yellow);
+  text-shadow: 2px 2px 0 #000;
+}
+
+.battle-stats-modal-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.battle-stats-card {
+  border: 3px solid #000;
+  border-radius: 14px;
+  padding: 12px;
+  background: linear-gradient(180deg, #F8F9F9, #FFFFFF);
+  box-shadow: 3px 3px 0 #000;
+}
+
+.battle-stats-card-name {
+  font-family: var(--font-title);
+  font-size: 1.15rem;
+  margin-bottom: 10px;
 }
 
 .battle-stat-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
+  gap: 6px;
 }
 
 .battle-stat-pill {
@@ -2177,7 +2248,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
+  min-height: 44px;
   padding: 4px 6px;
   border: 2px solid #000;
   border-radius: 10px;
@@ -2517,6 +2588,10 @@ body {
 
   .mystery-sprite {
     margin: 0 auto;
+  }
+
+  .battle-stats-modal-body {
+    grid-template-columns: 1fr;
   }
 
   .battle-stat-grid {
