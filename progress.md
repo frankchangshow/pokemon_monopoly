@@ -49,3 +49,5 @@ Updates:
 - Updated battle HUD labels to show dual type chips and move category chips without changing the existing two-button battle flow.
 - Verified direct engine checks: Meowscarada has Grass/Dark, Rotom has Electric/Ghost, Tackle is physical and does 0 damage into Ghost, Flower Trick is physical and uses attack/defense.
 - Verified browser battle path with Playwright: forced Meowscarada vs Rotom battle rendered dual types/category chips, clicking Flower Trick used stat-based damage, HP/logs updated, and no browser console errors were reported.
+- Added a battle stat panel to the fight HUD so each side now shows `HP`, `ATK`, `DEF`, `SPA`, `SPD`, and `SPE` directly under the Pokémon name.
+- Verified the new stat panel in browser: Meowscarada vs Rotom battle rendered both stat cards, values matched the engine state, and no browser console errors were reported.

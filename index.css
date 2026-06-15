@@ -2162,6 +2162,44 @@ body {
   color: var(--text-dark);
 }
 
+.battle-stat-panel {
+  margin: 8px 0 10px 0;
+}
+
+.battle-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.battle-stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 4px 6px;
+  border: 2px solid #000;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #FFF, #F4F6F7);
+  box-shadow: 2px 2px 0 #000;
+  text-transform: uppercase;
+}
+
+.battle-stat-pill span {
+  font-size: 0.62rem;
+  font-weight: 900;
+  color: #566573;
+  letter-spacing: 0.03em;
+}
+
+.battle-stat-pill strong {
+  font-family: var(--font-title);
+  font-size: 0.95rem;
+  color: var(--text-dark);
+  line-height: 1;
+}
+
 .battle-name {
   font-family: var(--font-title);
   font-size: 1.3rem;
@@ -2479,6 +2517,10 @@ body {
 
   .mystery-sprite {
     margin: 0 auto;
+  }
+
+  .battle-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

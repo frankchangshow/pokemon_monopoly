@@ -3,10 +3,10 @@
  * Integrates assets, sounds, Monopoly engine, and Battle engine to render a dynamic comic-book game.
  */
 
-import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=28';
-import { Sound } from './sound.js?v=28';
-import { GameEngine } from './game.js?v=28';
-import { Battle } from './battle.js?v=28';
+import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=29';
+import { Sound } from './sound.js?v=29';
+import { GameEngine } from './game.js?v=29';
+import { Battle } from './battle.js?v=29';
 
 window.Battle = Battle;
 
@@ -110,12 +110,14 @@ class UIManager {
     this.playerPokeTera = document.getElementById("player-poke-tera");
     this.playerHpBar = document.getElementById("player-hp-bar");
     this.playerHpText = document.getElementById("player-hp-text");
+    this.playerBattleStats = document.getElementById("player-battle-stats");
     this.playerBattleSprite = document.getElementById("player-battle-sprite");
     
     this.enemyPokeName = document.getElementById("enemy-poke-name");
     this.enemyPokeTera = document.getElementById("enemy-poke-tera");
     this.enemyHpBar = document.getElementById("enemy-hp-bar");
     this.enemyHpText = document.getElementById("enemy-hp-text");
+    this.enemyBattleStats = document.getElementById("enemy-battle-stats");
     this.enemyBattleSprite = document.getElementById("enemy-battle-sprite");
     
     this.battleMove0 = document.getElementById("move-btn-0");
@@ -3608,9 +3610,22 @@ class UIManager {
       const power = move.category === "status" || !move.power ? "Status" : move.power;
       return `<span class="move-type-tag ${move.type.toLowerCase()}">${move.type}</span> ${category} ${this.escapeHTML(move.name)} (${power})`;
     };
+    const renderStatPanel = pokemon => {
+      const stats = pokemon.stats || {};
+      const statRows = [
+        ["HP", stats.hp],
+        ["ATK", stats.attack],
+        ["DEF", stats.defense],
+        ["SPA", stats.specialAttack],
+        ["SPD", stats.specialDefense],
+        ["SPE", stats.speed]
+      ].map(([label, value]) => `<div class="battle-stat-pill"><span>${label}</span><strong>${Number.isFinite(value) ? value : "--"}</strong></div>`).join("");
+      return `<div class="battle-stat-grid">${statRows}</div>`;
+    };
 
     // Player HUD
     this.playerPokeName.innerHTML = `${battle.player.name} (Lv. ${battle.player.level}) ${renderTypeTags(battle.player)}`;
+    if (this.playerBattleStats) this.playerBattleStats.innerHTML = renderStatPanel(battle.player);
     this.playerHpText.innerText = `${battle.player.hp} / ${battle.player.maxHp} HP`;
     this.playerHpBar.style.width = `${(battle.player.hp / battle.player.maxHp) * 100}%`;
     
@@ -3635,6 +3650,7 @@ class UIManager {
 
     // Enemy HUD
     this.enemyPokeName.innerHTML = `${battle.enemy.name} (Lv. ${battle.enemy.level}) ${renderTypeTags(battle.enemy)}`;
+    if (this.enemyBattleStats) this.enemyBattleStats.innerHTML = renderStatPanel(battle.enemy);
     this.enemyHpText.innerText = `${battle.enemy.hp} / ${battle.enemy.maxHp} HP`;
     this.enemyHpBar.style.width = `${(battle.enemy.hp / battle.enemy.maxHp) * 100}%`;
     

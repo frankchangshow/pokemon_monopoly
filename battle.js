@@ -3,8 +3,8 @@
  * Handles move execution, type matchups, CPU AI, logs, Terastallization, and resolution callbacks.
  */
 
-import { PokemonDB, PokemonBattleStats } from './assets.js?v=28';
-import { Sound } from './sound.js?v=28';
+import { PokemonDB, PokemonBattleStats } from './assets.js?v=29';
+import { Sound } from './sound.js?v=29';
 
 const ALL_STATS = ["hp", "attack", "defense", "specialAttack", "specialDefense", "speed"];
 const PHYSICAL_TYPES = new Set(["Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Steel"]);
