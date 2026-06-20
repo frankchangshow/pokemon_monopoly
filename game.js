@@ -939,7 +939,15 @@ export class GameEngine {
       "Tinkatink": ["Tinkatink", "Tinkaton"],
       "Charcadet": ["Charcadet", "Ceruledge"],
       "Shroodle": ["Shroodle", "Grafaiai"],
-      "Tandemaus": ["Tandemaus", "Maushold"]
+      "Tandemaus": ["Tandemaus", "Maushold"],
+      "Lechonk": ["Lechonk", "Oinkologne"],
+      "Tarountula": ["Tarountula", "Spidops"],
+      "Fidough": ["Fidough", "Dachsbun"],
+      "Smoliv": ["Smoliv", "Dolliv", "Arboliva"],
+      "Nacli": ["Nacli", "Naclstack", "Garganacl"],
+      "Toedscool": ["Toedscool", "Toedscruel"],
+      "Capsakid": ["Capsakid", "Scovillain"],
+      "Wattrel": ["Wattrel", "Kilowattrel"]
     };
   }
 

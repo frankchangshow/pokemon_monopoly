@@ -17,6 +17,7 @@ const AVAILABLE_PNGS = [
   "tarountula", "corviknight", "tandemaus", "rotom", "nacli", "orthworm", "toedscool", "capsakid", "grafaiai", "shroodle", "wattrel", "bellibolt",
   "dondozo", "tatsugiri", "veluza",
   "annihilape", "baxcalibur", "clodsire", "cyclizar", "dudunsparce", "farigiraf", "flamigo", "gholdengo", "glimmora", "kingambit", "maushold", "palafin",
+  "oinkologne", "spidops", "dachsbun", "dolliv", "arboliva", "naclstack", "garganacl", "toedscruel", "scovillain", "kilowattrel",
   "sprigatito_tera", "fuecoco_tera", "quaxly_tera", "pawmi_tera",
   "go_sprite", "jail_sprite", "free_parking_sprite", "go_to_jail_sprite",
   "go_full", "jail_full", "free_parking_full", "go_to_jail_full",

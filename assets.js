@@ -652,7 +652,17 @@ export const PokemonDB = {
   Glimmora: { name: "Glimmora", type: "Rock", hp: 140, moves: [{ name: "Power Gem", type: "Rock", power: 38, text: "CRYSTAL LASER!" }, { name: "Sludge Wave", type: "Poison", power: 34, text: "TOXIC BLOOM!" }], speed: 86 },
   Farigiraf: { name: "Farigiraf", type: "Psychic", hp: 150, moves: [{ name: "Twin Beam", type: "Psychic", power: 36, text: "DOUBLE MIND RAY!" }, { name: "Stomp", type: "Normal", power: 28, text: "Hoof stomp!" }], speed: 60 },
   Dudunsparce: { name: "Dudunsparce", type: "Normal", hp: 160, moves: [{ name: "Hyper Drill", type: "Normal", power: 40, text: "GOOFY DRILL BURST!" }, { name: "Glare", type: "Normal", power: 24, text: "Awkward stare!" }], speed: 55 },
-  Maushold: { name: "Maushold", type: "Normal", hp: 120, moves: [{ name: "Population Bomb", type: "Normal", power: 42, text: "FAMILY COMBO!" }, { name: "Play Rough", type: "Fairy", power: 30, text: "Tiny chaos!" }], speed: 111 }
+  Maushold: { name: "Maushold", type: "Normal", hp: 120, moves: [{ name: "Population Bomb", type: "Normal", power: 42, text: "FAMILY COMBO!" }, { name: "Play Rough", type: "Fairy", power: 30, text: "Tiny chaos!" }], speed: 111 },
+  Oinkologne: { name: "Oinkologne", type: "Normal", hp: 135, moves: [{ name: "Tackle", type: "Normal", power: 15, text: "Chubby slam!" }, { name: "Body Slam", type: "Normal", power: 32, text: "Heavy body drop!" }, { name: "Double Kick", type: "Fighting", power: 25, text: "2-SHOT!" }], speed: 65 },
+  Spidops: { name: "Spidops", type: "Bug", hp: 120, moves: [{ name: "Bug Bite", type: "Bug", power: 18, text: "Sharp nibble!" }, { name: "Silk Trap", type: "Bug", power: 34, text: "WEB ENTRAPMENT!" }, { name: "Slash", type: "Normal", power: 25, text: "Blade claws!" }], speed: 35 },
+  Dachsbun: { name: "Dachsbun", type: "Fairy", hp: 130, moves: [{ name: "Play Rough", type: "Fairy", power: 24, text: "Dachshund tackle!" }, { name: "Dazzling Gleam", type: "Fairy", power: 35, text: "SUPER GLOW!" }, { name: "Crunch", type: "Dark", power: 28, text: "Baked crunch bite!" }], speed: 95 },
+  Dolliv: { name: "Dolliv", type: "Grass", hp: 105, moves: [{ name: "Absorb", type: "Grass", power: 15, text: "Suck HP!" }, { name: "Razor Leaf", type: "Grass", power: 30, text: "SHARP LEAF SLICE!" }, { name: "Tackle", type: "Normal", power: 18, text: "Cute dash!" }], speed: 50 },
+  Arboliva: { name: "Arboliva", type: "Grass", hp: 140, moves: [{ name: "Mega Drain", type: "Grass", power: 25, text: "Large HP siphon!" }, { name: "Seed Bomb", type: "Grass", power: 35, text: "EXPLOSIVE SEED BOMB!" }, { name: "Petal Blizzard", type: "Grass", power: 45, text: "BLIZZARD OF PETALS!" }], speed: 70 },
+  Naclstack: { name: "Naclstack", type: "Rock", hp: 135, moves: [{ name: "Rock Throw", type: "Rock", power: 20, text: "Salty block toss!" }, { name: "Salt Cure", type: "Rock", power: 32, text: "CORROSIVE SALT SHIELD!" }, { name: "Rock Slide", type: "Rock", power: 28, text: "Avalanche of salt!" }], speed: 35 },
+  Garganacl: { name: "Garganacl", type: "Rock", hp: 170, moves: [{ name: "Salt Cure", type: "Rock", power: 38, text: "CORROSIVE SALT SHIELD!" }, { name: "Stone Edge", type: "Rock", power: 45, text: "SHARP ROCK SPIRES!" }, { name: "Hammer Arm", type: "Fighting", power: 40, text: "HEAVY FIST HAMMER!" }], speed: 55 },
+  Toedscruel: { name: "Toedscruel", type: "Ground", hp: 145, moves: [{ name: "Mud-Slap", type: "Ground", power: 18, text: "Sling muddy water!" }, { name: "Earth Power", type: "Ground", power: 36, text: "TERRA BURST!" }, { name: "Giga Drain", type: "Grass", power: 32, text: "Spore siphon!" }], speed: 85 },
+  Scovillain: { name: "Scovillain", type: "Grass", hp: 130, moves: [{ name: "Bullet Seed", type: "Grass", power: 20, text: "Spit seeds!" }, { name: "Fire Fang", type: "Fire", power: 32, text: "SPICY BITE!" }, { name: "Overheat", type: "Fire", power: 45, text: "APOCALYPSE BURN!" }], speed: 75 },
+  Kilowattrel: { name: "Kilowattrel", type: "Electric", hp: 135, moves: [{ name: "Spark", type: "Electric", power: 18, text: "Fly spark!" }, { name: "Hurricane", type: "Flying", power: 35, text: "WIND BLAST!" }, { name: "Electro Ball", type: "Electric", power: 42, text: "BALL OF ELECTRICITY!" }], speed: 105 }
 };
 
 export const PokemonBattleStats = {
@@ -703,7 +713,17 @@ export const PokemonBattleStats = {
   Glimmora: { types: ["Rock", "Poison"], stats: { hp: 83, attack: 55, defense: 90, specialAttack: 130, specialDefense: 81, speed: 86 } },
   Farigiraf: { types: ["Normal", "Psychic"], stats: { hp: 120, attack: 90, defense: 70, specialAttack: 110, specialDefense: 70, speed: 60 } },
   Dudunsparce: { types: ["Normal"], stats: { hp: 125, attack: 100, defense: 80, specialAttack: 85, specialDefense: 75, speed: 55 } },
-  Maushold: { types: ["Normal"], stats: { hp: 74, attack: 75, defense: 70, specialAttack: 65, specialDefense: 75, speed: 111 } }
+  Maushold: { types: ["Normal"], stats: { hp: 74, attack: 75, defense: 70, specialAttack: 65, specialDefense: 75, speed: 111 } },
+  Oinkologne: { types: ["Normal"], stats: { hp: 75, attack: 100, defense: 75, specialAttack: 59, specialDefense: 75, speed: 65 } },
+  Spidops: { types: ["Bug"], stats: { hp: 60, attack: 79, defense: 92, specialAttack: 52, specialDefense: 86, speed: 35 } },
+  Dachsbun: { types: ["Fairy"], stats: { hp: 60, attack: 80, defense: 115, specialAttack: 50, specialDefense: 80, speed: 95 } },
+  Dolliv: { types: ["Grass", "Normal"], stats: { hp: 52, attack: 53, defense: 60, specialAttack: 78, specialDefense: 78, speed: 33 } },
+  Arboliva: { types: ["Grass", "Normal"], stats: { hp: 78, attack: 69, defense: 90, specialAttack: 125, specialDefense: 109, speed: 39 } },
+  Naclstack: { types: ["Rock"], stats: { hp: 60, attack: 60, defense: 100, specialAttack: 35, specialDefense: 65, speed: 35 } },
+  Garganacl: { types: ["Rock"], stats: { hp: 100, attack: 100, defense: 130, specialAttack: 45, specialDefense: 90, speed: 35 } },
+  Toedscruel: { types: ["Ground", "Grass"], stats: { hp: 80, attack: 70, defense: 65, specialAttack: 80, specialDefense: 120, speed: 100 } },
+  Scovillain: { types: ["Grass", "Fire"], stats: { hp: 65, attack: 108, defense: 65, specialAttack: 108, specialDefense: 65, speed: 75 } },
+  Kilowattrel: { types: ["Electric", "Flying"], stats: { hp: 70, attack: 70, defense: 60, specialAttack: 105, specialDefense: 60, speed: 125 } }
 };
 
 export const SpecialSVGs = {
