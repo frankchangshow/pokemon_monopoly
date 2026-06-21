@@ -1186,8 +1186,8 @@ export class GameEngine {
     const chain = this.getEvolutionChain(baseName);
     if (!chain) return 10;
     const stage = Math.max(0, this.getStageOfPokemon(chain, pokemonName));
-    if (stage <= 0) return 8;
-    if (stage === 1) return 12;
+    if (stage <= 0) return 12;
+    if (stage === 1) return 16;
     return 10;
   }
 

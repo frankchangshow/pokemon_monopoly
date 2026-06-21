@@ -2814,7 +2814,7 @@ class UIManager {
       Sound.stopBattleBGM();
       this.battleOverlay.style.display = "none";
       this.awardBattleItemDrop(player, won, encounter.kind === "Titan" || encounter.rarity === "Ultra Rare" ? "rare" : "battle");
-      if (won) this.awardEvolutionPoints(player, playerPoke, 2, "battle win", this.gameContainer);
+      if (won) this.awardEvolutionPoints(player, playerPoke, 1, "battle win", this.gameContainer);
       if (!won) {
         this.setDialogText(`${encounter.name} escaped after the battle. The board goes quiet again.`);
         this.game.log(`Mystery encounter ${encounter.name} escaped after defeating ${playerPoke}.`);
@@ -2824,7 +2824,7 @@ class UIManager {
       this.initiateMysteryCatchMiniGame(encounter, success => {
         if (success) {
           this.addMysteryPokemonToCollection(encounter);
-          this.awardEvolutionPoints(player, playerPoke, 2, "caught a Pokémon", this.gameContainer);
+          this.awardEvolutionPoints(player, playerPoke, 1, "caught a Pokémon", this.gameContainer);
           this.setDialogText(`${encounter.isShiny ? "Shiny " : ""}${encounter.name} joined your collection with ${encounter.quirk.name}!`);
           this.game.log(`✨ ${player.name} caught ${encounter.isShiny ? "Shiny " : ""}${encounter.name} (${encounter.kind}, ${encounter.quirk.name}).`);
           this.renderCollection();
@@ -2902,7 +2902,7 @@ class UIManager {
       Sound.stopBattleBGM();
       this.battleOverlay.style.display = "none";
       this.awardBattleItemDrop(this.game.players[0], won, "battle");
-      if (won) this.awardEvolutionPoints(this.game.players[0], playerPoke, 2, "battle win", this.gameContainer);
+      if (won) this.awardEvolutionPoints(this.game.players[0], playerPoke, 1, "battle win", this.gameContainer);
       if (won) {
         // human wins the battle: transition to the catch mini-game!
         this.initiateCatchMiniGame(spaceId, (success) => {
@@ -2916,7 +2916,7 @@ class UIManager {
               player0.collection.push(space.pokemon);
               player0.collectionMeta.push(null);
             }
-            this.awardEvolutionPoints(player0, playerPoke, 2, "caught a Pokémon", this.gameContainer);
+            this.awardEvolutionPoints(player0, playerPoke, 1, "caught a Pokémon", this.gameContainer);
             this.renderCollection();
             this.game.buyProperty(player0.id, spaceId, 100);
             this.setDialogText(`You caught and claimed ${space.name} for FREE!`);
@@ -3688,7 +3688,7 @@ class UIManager {
       Sound.stopBattleBGM();
       this.battleOverlay.style.display = "none";
       this.awardBattleItemDrop(this.game.players[playerSideIdx], won, won ? "battle" : "loss");
-      if (won) this.awardEvolutionPoints(this.game.players[playerSideIdx], playerPoke, 2, "battle win", this.gameContainer);
+      if (won) this.awardEvolutionPoints(this.game.players[playerSideIdx], playerPoke, 1, "battle win", this.gameContainer);
       
       const activePlayer = this.game.getCurrentPlayer();
       const space = this.game.spaces[spaceId];
@@ -3707,7 +3707,7 @@ class UIManager {
                 player0.collection.push(enemyPoke);
                 player0.collectionMeta.push(null);
               }
-              this.awardEvolutionPoints(this.game.players[0], playerPoke, 2, "caught a Pokémon", this.gameContainer);
+              this.awardEvolutionPoints(this.game.players[0], playerPoke, 1, "caught a Pokémon", this.gameContainer);
               this.renderCollection();
               this.showCenterActionToast(`Caught ${enemyPoke} and paid 50% rent!`, "money", this.gameContainer);
               this.setDialogText(`GOTCHA! You caught ${enemyPoke} for your collection and paid discounted rent ${this.formatMoney(rentResult.rent)} to ${owner.name}. ${owner.name} keeps ${space.name}.`);
@@ -3746,7 +3746,7 @@ class UIManager {
           this.renderCollection();
           this.setDialogText(`Property defended! You caught ${enemyPoke}, and ${activePlayer.name} pays full rent.`);
           this.game.log(`🛡️ Property defended! You caught ${enemyPoke} from ${activePlayer.name}.`);
-          this.awardEvolutionPoints(humanOwner, playerPoke, 2, "property defense", this.gameContainer);
+          this.awardEvolutionPoints(humanOwner, playerPoke, 1, "property defense", this.gameContainer);
           const rentResult = this.game.payRent(activePlayer.id, spaceId, 0);
           if (rentResult.rent > 0) {
             this.showMoneyTransfer(rentResult.rent, activePlayer.name, humanOwner.name, `Defense won: collected ${this.formatMoney(rentResult.rent)} rent!`, this.gameContainer);
