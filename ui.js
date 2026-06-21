@@ -3,10 +3,10 @@
  * Integrates assets, sounds, Monopoly engine, and Battle engine to render a dynamic comic-book game.
  */
 
-import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=32';
-import { Sound } from './sound.js?v=32';
-import { GameEngine, BattleItems } from './game.js?v=32';
-import { Battle } from './battle.js?v=32';
+import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=33';
+import { Sound } from './sound.js?v=33';
+import { GameEngine, BattleItems } from './game.js?v=33';
+import { Battle } from './battle.js?v=33';
 
 window.Battle = Battle;
 

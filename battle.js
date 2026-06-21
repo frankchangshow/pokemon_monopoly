@@ -3,8 +3,8 @@
  * Handles move execution, type matchups, CPU AI, logs, Terastallization, and resolution callbacks.
  */
 
-import { PokemonDB, PokemonBattleStats } from './assets.js?v=32';
-import { Sound } from './sound.js?v=32';
+import { PokemonDB, PokemonBattleStats } from './assets.js?v=33';
+import { Sound } from './sound.js?v=33';
 
 const ALL_STATS = ["hp", "attack", "defense", "specialAttack", "specialDefense", "speed"];
 const PLAYER_MIN_MOVE_POWER = 30;
@@ -476,12 +476,6 @@ export class BattleEngine {
     Sound.playHitSuperEffective();
   }
 
-  terastallizeEnemy() {
-    if (!this.activeBattle || this.activeBattle.enemy.terastallized) return;
-    this.activeBattle.enemy.terastallized = true;
-    this.log(`✨ Opponent's ${this.activeBattle.enemy.name} Terastallized!`);
-  }
-
   applyBattleItemToPlayer(item) {
     if (!this.activeBattle || !item) return { ok: false, message: "No active battle." };
     const player = this.activeBattle.player;
@@ -560,11 +554,6 @@ export class BattleEngine {
 
     const enemy = this.activeBattle.enemy;
     const player = this.activeBattle.player;
-
-    // AI logic: 20% chance to Terastallize if HP is below 50%
-    if (!enemy.terastallized && enemy.hp < enemy.maxHp * 0.5 && Math.random() < 0.3) {
-      this.terastallizeEnemy();
-    }
 
     // Choose move (AI favors stronger moves, or pick random)
     const move = enemy.moves[Math.floor(Math.random() * enemy.moves.length)];

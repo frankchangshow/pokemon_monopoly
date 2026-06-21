@@ -63,3 +63,4 @@ Updates:
 - Changed Terastallize into a charged resource: players start with 1 Tera charge, spending it disables Tera until recharged by Free Parking, passing GO chance, or Tera Shard.
 - Verified item/Tera behavior in browser: inventory renders in the collection panel, X Attack consumes once per battle and applies +1 Attack, Protein persists +1 Attack training, Free Parking recharges Tera and drops an item, and item/training/Tera state survives serialize/load.
 - Collapsed the Adventure Log by default into a compact SHOW/HIDE toggle so the right sidebar prioritizes trainers, inventory, and collection during normal play.
+- Disabled AI auto-Terastallize because bots were bypassing the new Tera charge rules and becoming unfairly strong against the human player.
