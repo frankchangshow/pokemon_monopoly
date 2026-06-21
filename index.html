@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pokémon Monopoly: Paldea Edition</title>
-  <link rel="stylesheet" href="index.css?v=34">
+  <link rel="stylesheet" href="index.css?v=38">
 </head>
 <body>
 
@@ -144,12 +144,12 @@
 
     <!-- RIGHT PANEL: Player details & Stats -->
     <div class="sidebar">
-      <h2 style="font-family: var(--font-title); font-size: 1.6rem; color: var(--accent-yellow); text-shadow: 2px 2px 0px #000; letter-spacing: 1px;">TRAINER LIST</h2>
+      <h2 class="sidebar-title trainer-title">TRAINER LIST</h2>
       <div class="trainer-list" id="trainer-list-box">
         <!-- Trainer stats cards dynamically injected here -->
       </div>
 
-      <h2 style="font-family: var(--font-title); font-size: 1.4rem; color: #BDC3C7; text-shadow: 1px 1px 0px #000; letter-spacing: 1px; margin-top: 15px;">POKÉMON COLLECTION</h2>
+      <h2 class="sidebar-title collection-title">POKÉMON COLLECTION</h2>
       <div class="collection-panel" id="collection-panel-box">
         <!-- Pokémon collection list and Trade options will be injected here -->
       </div>
@@ -237,6 +237,20 @@
     </div>
   </div>
 
+  <div class="battle-item-overlay" id="battle-item-overlay" style="display:none;">
+    <div class="battle-item-modal">
+      <div class="battle-item-modal-header">
+        <div>
+          <div class="battle-item-kicker">BATTLE BAG</div>
+          <div class="battle-item-title">Choose An Item</div>
+        </div>
+        <button class="btn-comic battle-item-close" id="battle-item-close-btn" type="button">CLOSE</button>
+      </div>
+      <div class="battle-item-subtitle">Pick one item to use this battle. No typing needed.</div>
+      <div class="battle-item-grid" id="battle-item-grid"></div>
+    </div>
+  </div>
+
   <!-- CATCH MINI-GAME OVERLAY -->
   <div class="catch-overlay" id="catch-overlay" style="display: none;">
     <div class="catch-container">
@@ -304,11 +318,11 @@
         </button>
         <button class="btn-ball" id="ball-btn-great" data-ball="great">
           <div class="ball-icon great"></div>
-          <div class="ball-label">Great Ball<br><small>₽50</small></div>
+          <div class="ball-label">Great Ball<br><small>$50</small></div>
         </button>
         <button class="btn-ball" id="ball-btn-ultra" data-ball="ultra">
           <div class="ball-icon ultra"></div>
-          <div class="ball-label">Ultra Ball<br><small>₽100</small></div>
+          <div class="ball-label">Ultra Ball<br><small>$100</small></div>
         </button>
       </div>
 
@@ -344,7 +358,7 @@
   <div class="card-draw-overlay" id="card-draw-overlay">
     <div class="drawn-card-box" id="card-draw-box">
       <div class="drawn-card-title" id="card-draw-title">Academy Class</div>
-      <div class="drawn-card-text" id="card-draw-text">You passed Jacq's biology class! Collect ₽50.</div>
+      <div class="drawn-card-text" id="card-draw-text">You passed Jacq's biology class! Collect $50.</div>
       <button class="btn-comic" id="card-draw-ok-btn" style="background-color: var(--accent-blue); color: white;">AWESOME!</button>
     </div>
   </div>
@@ -378,6 +392,6 @@
   </div>
 
   <!-- Core Javascript code -->
-  <script type="module" src="ui.js?v=34"></script>
+  <script type="module" src="ui.js?v=38"></script>
 </body>
 </html>

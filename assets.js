@@ -779,7 +779,7 @@ export const SpecialSVGs = {
       
       <!-- Action Bubble Subtext -->
       <rect x="10" y="52" width="56" height="15" rx="5" fill="#F1C40F" stroke="#000" stroke-width="2"/>
-      <text x="14" y="62" font-family="sans-serif" font-size="7.5" font-weight="900" fill="#000">COLLECT ₽200</text>
+      <text x="14" y="62" font-family="sans-serif" font-size="7.5" font-weight="900" fill="#000">COLLECT $200</text>
       
       <!-- Red Movement Arrow -->
       <path d="M 90,82 C 60,82 40,82 15,82" fill="none" stroke="#000" stroke-width="7" stroke-linecap="round"/>
@@ -947,12 +947,12 @@ export const SpecialSVGs = {
       <!-- Gold Coin -->
       <g>
         <circle cx="70" cy="66" r="17" fill="#F1C40F" stroke="#000" stroke-width="3.5"/>
-        <text x="64" y="73" font-family="'Luckiest Guy', Impact, sans-serif" font-size="20" font-weight="900" fill="#FFF" stroke="#000" stroke-width="1.5">₽</text>
+        <text x="64" y="73" font-family="'Luckiest Guy', Impact, sans-serif" font-size="20" font-weight="900" fill="#FFF" stroke="#000" stroke-width="1.5">$</text>
       </g>
       
       <!-- Bold TAX starburst -->
       <polygon points="12,12 28,18 35,8 48,18 62,10 65,22 80,18 72,32 82,42 68,42 65,55 52,48 40,55 38,42 22,45 28,32" fill="#E74C3C" stroke="#000" stroke-width="2.5" stroke-linejoin="round" transform="scale(0.8) translate(10, 0)"/>
-      <text x="24" y="28" font-family="'Luckiest Guy', Impact, sans-serif" font-size="12" font-weight="900" fill="#FFF" transform="scale(0.8) translate(10, 0)">TAX ₽200</text>
+      <text x="24" y="28" font-family="'Luckiest Guy', Impact, sans-serif" font-size="12" font-weight="900" fill="#FFF" transform="scale(0.8) translate(10, 0)">TAX $200</text>
     </svg>
   `,
   LeagueAssessmentTax: `
@@ -974,7 +974,7 @@ export const SpecialSVGs = {
       
       <!-- Bold TAX starburst -->
       <polygon points="12,12 28,18 35,8 48,18 62,10 65,22 80,18 72,32 82,42 68,42 65,55 52,48 40,55 38,42 22,45 28,32" fill="#2E4053" stroke="#000" stroke-width="2.5" stroke-linejoin="round" transform="scale(0.8) translate(10, 0)"/>
-      <text x="24" y="28" font-family="'Luckiest Guy', Impact, sans-serif" font-size="12" font-weight="900" fill="#FFF" transform="scale(0.8) translate(10, 0)">TAX ₽100</text>
+      <text x="24" y="28" font-family="'Luckiest Guy', Impact, sans-serif" font-size="12" font-weight="900" fill="#FFF" transform="scale(0.8) translate(10, 0)">TAX $100</text>
     </svg>
   `
 };
@@ -1023,27 +1023,27 @@ export const BoardSpaces = [
 ];
 
 export const AcademyCards = [
-  { text: "Passed home economics class with Jacq! Collect ₽50", action: "money", val: 50 },
+  { text: "Passed home economics class with Jacq! Collect $50", action: "money", val: 50 },
   { text: "Got caught riding Koraidon in hallways. Go directly to Detention!", action: "gotojail" },
-  { text: "Found a lost item on the playground. Collect ₽20", action: "money", val: 20 },
-  { text: "Advanced to GO. Collect ₽200", action: "moveto", val: 0 },
-  { text: "Gym Battle preparation. Pay ₽50 for potions", action: "money", val: -50 },
+  { text: "Found a lost item on the playground. Collect $20", action: "money", val: 20 },
+  { text: "Advanced to GO. Collect $200", action: "moveto", val: 0 },
+  { text: "Gym Battle preparation. Pay $50 for potions", action: "money", val: -50 },
   { text: "Principal Clavell rewards you for clean record! Get Out of Detention Free", action: "jailfree" },
-  { text: "Take a trip to Levincia Gym. If you pass GO, collect ₽200", action: "moveto", val: 29 },
-  { text: "Your Pokemon leveled up! Pay ₽15 per Camp and ₽40 per Gym Station for battle treats", action: "repairs", houseVal: 15, hotelVal: 40 },
-  { text: "Team Star blocked the path! Pay ₽100 toll", action: "money", val: -100 },
-  { text: "Won the Academy Tournament! Collect ₽100", action: "money", val: 100 }
+  { text: "Take a trip to Levincia Gym. If you pass GO, collect $200", action: "moveto", val: 29 },
+  { text: "Your Pokemon leveled up! Pay $15 per Camp and $40 per Gym Station for battle treats", action: "repairs", houseVal: 15, hotelVal: 40 },
+  { text: "Team Star blocked the path! Pay $100 toll", action: "money", val: -100 },
+  { text: "Won the Academy Tournament! Collect $100", action: "money", val: 100 }
 ];
 
 export const TeraRaidCards = [
-  { text: "Successfully cleared a 5-Star Tera Raid! Collect ₽100", action: "money", val: 100 },
-  { text: "Pokemon Center donation fund. Pay ₽50", action: "money", val: -50 },
-  { text: "Tera shards collection refund. Collect ₽25", action: "money", val: 25 },
-  { text: "LP Conversion! Collect ₽150", action: "money", val: 150 },
-  { text: "Your Pokemon fainted in a Tera Raid. Pay ₽50 for revives", action: "money", val: -50 },
+  { text: "Successfully cleared a 5-Star Tera Raid! Collect $100", action: "money", val: 100 },
+  { text: "Pokemon Center donation fund. Pay $50", action: "money", val: -50 },
+  { text: "Tera shards collection refund. Collect $25", action: "money", val: 25 },
+  { text: "LP Conversion! Collect $150", action: "money", val: 150 },
+  { text: "Your Pokemon fainted in a Tera Raid. Pay $50 for revives", action: "money", val: -50 },
   { text: "Get Out of Detention Free card from Geeta", action: "jailfree" },
   { text: "Retreat to Pokemon Center Rest Stop (Free Parking)", action: "moveto", val: 20 },
-  { text: "Raid den collapse! Pay ₽25 per Camp and ₽100 per Gym Station for rebuilding", action: "repairs", houseVal: 25, hotelVal: 100 },
-  { text: "Scholarship reward from Uva/Naranja Academy. Collect ₽200", action: "money", val: 200 },
-  { text: "Inherited Gimmighoul Coins! Collect ₽100", action: "money", val: 100 }
+  { text: "Raid den collapse! Pay $25 per Camp and $100 per Gym Station for rebuilding", action: "repairs", houseVal: 25, hotelVal: 100 },
+  { text: "Scholarship reward from Uva/Naranja Academy. Collect $200", action: "money", val: 200 },
+  { text: "Inherited Gimmighoul Coins! Collect $100", action: "money", val: 100 }
 ];

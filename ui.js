@@ -3,10 +3,10 @@
  * Integrates assets, sounds, Monopoly engine, and Battle engine to render a dynamic comic-book game.
  */
 
-import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=34';
-import { Sound } from './sound.js?v=34';
-import { GameEngine, BattleItems } from './game.js?v=34';
-import { Battle } from './battle.js?v=34';
+import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=38';
+import { Sound } from './sound.js?v=38';
+import { GameEngine, BattleItems } from './game.js?v=38';
+import { Battle } from './battle.js?v=38';
 
 window.Battle = Battle;
 
@@ -50,11 +50,11 @@ const MYSTERY_POKEMON_POOL = [
   { name: "Maushold", title: "FAMILY SWARM EVENT!", rarity: "Rare", cost: 240, trigger: "swarm" }
 ];
 const MYSTERY_QUIRKS = [
-  { name: "Lucky", text: "+₽50 when you catch it.", cashBonus: 50 },
+  { name: "Lucky", text: "+$50 when you catch it.", cashBonus: 50 },
   { name: "Brave", text: "Starts battles with +1 saved level.", levelBonus: 1 },
   { name: "Swift", text: "Fast nature: +1 saved level.", levelBonus: 1 },
   { name: "Guardian", text: "Great for defending property.", defenseBonus: 1 },
-  { name: "Greedy", text: "+₽100 when you catch it.", cashBonus: 100 },
+  { name: "Greedy", text: "+$100 when you catch it.", cashBonus: 100 },
   { name: "Tera-born", text: "Carries a Tera sparkle badge.", teraBorn: true },
   { name: "Collector", text: "Raises the next mystery odds.", pityBonus: 2 },
   { name: "Stubborn", text: "Rare collection trophy trait.", trophy: true }
@@ -142,6 +142,9 @@ class UIManager {
     this.battleStatsToggleBtn = document.getElementById("battle-stats-toggle-btn");
     this.battleStatsOverlay = document.getElementById("battle-stats-overlay");
     this.battleStatsCloseBtn = document.getElementById("battle-stats-close-btn");
+    this.battleItemOverlay = document.getElementById("battle-item-overlay");
+    this.battleItemCloseBtn = document.getElementById("battle-item-close-btn");
+    this.battleItemGrid = document.getElementById("battle-item-grid");
     this.playerBattleStats = document.getElementById("player-battle-stats");
     this.enemyBattleStats = document.getElementById("enemy-battle-stats");
     this.playerBattleStatsName = document.getElementById("player-battle-stats-name");
@@ -352,9 +355,9 @@ class UIManager {
       const purchaseCost = Math.floor(space.cost * (1 - discount / 100));
       const bought = this.game.buyProperty(player.id, pos, discount);
       if (!bought) {
-        this.setDialogText(`Not enough money to buy ${space.name}. It costs ₽${purchaseCost}, but you only have ₽${player.cash}.`);
-        this.game.log(`${player.name} could not afford ${space.name} (cost ₽${purchaseCost}, cash ₽${player.cash}).`);
-        this.buyBtn.innerText = discount > 0 ? `CLAIM FREE (₽${purchaseCost})` : `BUY AT FULL (₽${space.cost})`;
+        this.setDialogText(`Not enough money to buy ${space.name}. It costs $${purchaseCost}, but you only have $${player.cash}.`);
+        this.game.log(`${player.name} could not afford ${space.name} (cost $${purchaseCost}, cash $${player.cash}).`);
+        this.buyBtn.innerText = discount > 0 ? `CLAIM FREE ($${purchaseCost})` : `BUY AT FULL ($${space.cost})`;
         this.buyBtn.style.display = "inline-block";
         this.endBtn.innerText = "END TURN";
         this.endBtn.style.display = "inline-block";
@@ -381,7 +384,7 @@ class UIManager {
         this.endBtn.innerText = "END TURN";
       }
 
-      this.setDialogText(`You bought ${space.name} (${space.pokemon}) for ₽${purchaseCost}!`);
+      this.setDialogText(`You bought ${space.name} (${space.pokemon}) for $${purchaseCost}!`);
       this.updateUI();
       this.maybeTriggerMysteryEncounter(player, "propertyClaim", () => {
         this.endBtn.style.display = "inline-block";
@@ -471,6 +474,12 @@ class UIManager {
     if (this.battleMove2) this.battleMove2.addEventListener("click", () => this.handlePlayerBattleMove(2));
     if (this.battleMove3) this.battleMove3.addEventListener("click", () => this.handlePlayerBattleMove(3));
     if (this.battleItemBtn) this.battleItemBtn.addEventListener("click", () => this.showBattleItemMenu());
+    if (this.battleItemCloseBtn) this.battleItemCloseBtn.addEventListener("click", () => this.hideBattleItemMenu());
+    if (this.battleItemOverlay) {
+      this.battleItemOverlay.addEventListener("click", (e) => {
+        if (e.target === this.battleItemOverlay) this.hideBattleItemMenu();
+      });
+    }
     
     this.battleTeraBtn.addEventListener("click", () => {
       const player = this.getActiveBattlePlayer();
@@ -651,7 +660,7 @@ class UIManager {
   formatSaveSummary(save) {
     const summary = save.summary || {};
     const trainerLines = (summary.trainers || []).slice(0, 4).map(t => {
-      return `${this.escapeHTML(t.name)}: ${this.escapeHTML(t.pokemon)} Lv.${t.level}, ₽${t.cash}, ${t.properties} deeds`;
+      return `${this.escapeHTML(t.name)}: ${this.escapeHTML(t.pokemon)} Lv.${t.level}, $${t.cash}, ${t.properties} deeds`;
     });
     const active = summary.activeTrainer ? `Turn: ${this.escapeHTML(summary.activeTrainer)}` : "Turn: Unknown";
     const owned = `Properties: ${summary.totalProperties || 0}`;
@@ -994,6 +1003,86 @@ class UIManager {
     setTimeout(() => toast.remove(), 1600);
   }
 
+  formatMoney(amount) {
+    const value = Math.max(0, Math.floor(Number(amount) || 0));
+    return `$${value}`;
+  }
+
+  getRentAmounts(spaceId) {
+    const fullRent = this.game.calculateRent(spaceId);
+    return {
+      fullRent,
+      winRent: Math.floor(fullRent * 0.5),
+      lossRent: Math.floor(fullRent * 1.5)
+    };
+  }
+
+  removeRentPreviewCard() {
+    const card = document.getElementById("rent-preview-card");
+    if (card) card.remove();
+  }
+
+  showRentPreviewCard(spaceId, payer, owner, mode = "payer") {
+    if (!this.actionBox || !payer || !owner) return;
+    this.removeRentPreviewCard();
+
+    const space = this.game.spaces[spaceId];
+    const { fullRent, winRent, lossRent } = this.getRentAmounts(spaceId);
+    const payerName = this.escapeHTML(payer.name);
+    const ownerName = this.escapeHTML(owner.name);
+    const title = mode === "collector" ? "Rent Incoming" : "Rent Due";
+    const safeLabel = mode === "collector" ? "Collect full rent" : "Pay now";
+    const challengeWin = mode === "collector"
+      ? `Win defense: catch Pokémon + collect ${this.formatMoney(fullRent)}`
+      : `Win battle: pay ${this.formatMoney(winRent)} if catch fails`;
+    const challengeLose = mode === "collector"
+      ? "Lose defense: collect $0, keep property"
+      : `Lose battle: pay ${this.formatMoney(lossRent)}`;
+
+    const card = document.createElement("div");
+    card.id = "rent-preview-card";
+    card.className = `rent-preview-card ${mode}`;
+    card.innerHTML = `
+      <div class="rent-preview-header">
+        <span>${title}</span>
+        <strong>${this.formatMoney(fullRent)}</strong>
+      </div>
+      <div class="rent-preview-property">${this.escapeHTML(space.name)} · ${payerName} → ${ownerName}</div>
+      <div class="rent-preview-grid">
+        <div class="rent-preview-option safe">
+          <span>${safeLabel}</span>
+          <strong>${mode === "collector" ? "+" : "-"}${this.formatMoney(fullRent)}</strong>
+        </div>
+        <div class="rent-preview-option win">
+          <span>${challengeWin}</span>
+        </div>
+        <div class="rent-preview-option lose">
+          <span>${challengeLose}</span>
+        </div>
+      </div>
+    `;
+
+    this.actionBox.insertBefore(card, this.actionBox.firstChild);
+  }
+
+  showMoneyTransfer(amount, fromName, toName, message, host = null) {
+    const value = Math.max(0, Math.floor(Number(amount) || 0));
+    if (value <= 0) return;
+
+    const target = host || this.gameContainer || document.body;
+    this.showCenterActionToast(message || `${this.formatMoney(value)} paid`, "money", target);
+
+    const burst = document.createElement("div");
+    burst.className = "money-transfer-burst";
+    burst.innerHTML = `
+      <span class="money-transfer-amount">-${this.formatMoney(value)}</span>
+      <span class="money-transfer-route">${this.escapeHTML(fromName)} pays ${this.escapeHTML(toName)}</span>
+      <span class="money-transfer-amount gain">+${this.formatMoney(value)}</span>
+    `;
+    target.appendChild(burst);
+    setTimeout(() => burst.remove(), 1900);
+  }
+
   showDamageNumber(side, damage) {
     const parent = side === "player" ? this.playerBattleSprite : this.enemyBattleSprite;
     if (!parent) return;
@@ -1076,7 +1165,7 @@ class UIManager {
       if (space.cost > 0) {
         const price = document.createElement("div");
         price.className = "tile-price";
-        price.innerText = `₽${space.cost}`;
+        price.innerText = `$${space.cost}`;
         content.appendChild(price);
       }
 
@@ -1126,21 +1215,21 @@ class UIManager {
 
     if (space.type === "property") {
       rentInfoHTML = `
-        <div class="deed-info-row"><span>Base Rent (Unimproved):</span><span>₽${space.rent[0]}</span></div>
-        <div class="deed-info-row"><span>With 1 Camp:</span><span>₽${space.rent[1]}</span></div>
-        <div class="deed-info-row"><span>With 2 Camps:</span><span>₽${space.rent[2]}</span></div>
-        <div class="deed-info-row"><span>With 3 Camps:</span><span>₽${space.rent[3]}</span></div>
-        <div class="deed-info-row"><span>With 4 Camps:</span><span>₽${space.rent[4]}</span></div>
-        <div class="deed-info-row"><span>With Gym Station:</span><span>₽${space.rent[5]}</span></div>
-        <div class="deed-info-row bold"><span>Camp Upgrade Cost:</span><span>₽${space.houseCost}</span></div>
+        <div class="deed-info-row"><span>Base Rent (Unimproved):</span><span>$${space.rent[0]}</span></div>
+        <div class="deed-info-row"><span>With 1 Camp:</span><span>$${space.rent[1]}</span></div>
+        <div class="deed-info-row"><span>With 2 Camps:</span><span>$${space.rent[2]}</span></div>
+        <div class="deed-info-row"><span>With 3 Camps:</span><span>$${space.rent[3]}</span></div>
+        <div class="deed-info-row"><span>With 4 Camps:</span><span>$${space.rent[4]}</span></div>
+        <div class="deed-info-row"><span>With Gym Station:</span><span>$${space.rent[5]}</span></div>
+        <div class="deed-info-row bold"><span>Camp Upgrade Cost:</span><span>$${space.houseCost}</span></div>
       `;
     } else if (space.type === "station") {
       colorClass = "station";
       rentInfoHTML = `
-        <div class="deed-info-row"><span>1 Taxi Owned:</span><span>₽${space.rent[0]}</span></div>
-        <div class="deed-info-row"><span>2 Taxis Owned:</span><span>₽${space.rent[1]}</span></div>
-        <div class="deed-info-row"><span>3 Taxis Owned:</span><span>₽${space.rent[2]}</span></div>
-        <div class="deed-info-row"><span>4 Taxis Owned:</span><span>₽${space.rent[3]}</span></div>
+        <div class="deed-info-row"><span>1 Taxi Owned:</span><span>$${space.rent[0]}</span></div>
+        <div class="deed-info-row"><span>2 Taxis Owned:</span><span>$${space.rent[1]}</span></div>
+        <div class="deed-info-row"><span>3 Taxis Owned:</span><span>$${space.rent[2]}</span></div>
+        <div class="deed-info-row"><span>4 Taxis Owned:</span><span>$${space.rent[3]}</span></div>
       `;
     } else if (space.type === "utility") {
       colorClass = "utility";
@@ -1278,8 +1367,8 @@ class UIManager {
       <div style="width: 80px; height: 80px; margin: 0 auto 10px auto;">${pokeImgHTML}</div>
       <div class="deed-pokemon-name">${space.pokemon ? space.pokemon : "Corviknight Flying Taxi"}</div>
       ${statusHTML}
-      <div class="deed-info-row"><span>Purchase Price:</span><span>₽${space.cost}</span></div>
-      <div class="deed-info-row"><span>Mortgage Value:</span><span>₽${Math.floor(space.cost / 2)}</span></div>
+      <div class="deed-info-row"><span>Purchase Price:</span><span>$${space.cost}</span></div>
+      <div class="deed-info-row"><span>Mortgage Value:</span><span>$${Math.floor(space.cost / 2)}</span></div>
       <hr style="margin: 10px 0; border: 0; border-top: 1.5px solid #CCC;"/>
       ${rentInfoHTML}
       
@@ -1415,7 +1504,7 @@ class UIManager {
         } else {
           // Reset price text if not owned
           if (priceTag && space.cost > 0) {
-            priceTag.innerText = `₽${space.cost}`;
+            priceTag.innerText = `$${space.cost}`;
           }
         }
 
@@ -1545,7 +1634,7 @@ class UIManager {
               <span class="trainer-card-partner">${p.pokemon} (Lv. ${p.level}) ${p.inJail ? '[DETENTION]' : ''}</span>
             </div>
           </div>
-          <span class="trainer-card-cash">₽${p.cash}</span>
+          <span class="trainer-card-cash">$${p.cash}</span>
         </div>
       `;
     }).join("");
@@ -1570,7 +1659,7 @@ class UIManager {
           // Create floating element
           const floatEl = document.createElement("div");
           floatEl.className = `floating-cash ${diff > 0 ? 'gain' : 'loss'}`;
-          floatEl.innerText = `${diff > 0 ? '+' : '-'}₽${Math.abs(diff)}`;
+          floatEl.innerText = `${diff > 0 ? '+' : '-'}$${Math.abs(diff)}`;
           card.appendChild(floatEl);
 
           // Auto-remove element after animation ends (1200ms)
@@ -1660,8 +1749,8 @@ class UIManager {
       ["Turns", stats.turnsCompleted || 0],
       ["Your GO Laps", humanGoPasses],
       ["Total GO Passes", stats.totalPassesGo || 0],
-      ["Final Cash", `₽${winner.cash}`],
-      ["Net Worth", `₽${netWorth}`],
+      ["Final Cash", `$${winner.cash}`],
+      ["Net Worth", `$${netWorth}`],
       ["Properties", propertiesOwned],
       ["Collection", collectionCount],
       ["Partner", `${winner.pokemon} Lv.${winner.level}`],
@@ -1809,6 +1898,7 @@ class UIManager {
       const btn = document.getElementById(id);
       if (btn) btn.remove();
     });
+    this.removeRentPreviewCard();
     this.activePassHandler = null;
     this.endBtn.innerText = "END TURN";
 
@@ -1859,14 +1949,14 @@ class UIManager {
           const player = this.game.getCurrentPlayer();
           const paidFine = this.game.payJailFine(player);
           if (!paidFine) {
-            this.setDialogText("Detention limit reached, but you need ₽50 to pay the escape fine.");
+            this.setDialogText("Detention limit reached, but you need $50 to pay the escape fine.");
             this.rollBtn.style.display = "none";
             this.endBtn.style.display = "inline-block";
             return;
           }
           this.game.movePlayer(player, result.spacesMoved);
           this.updateUI();
-          this.setDialogText("Detention limit reached! Paid ₽50 escape fine.");
+          this.setDialogText("Detention limit reached! Paid $50 escape fine.");
         }
 
         // Animate movement
@@ -1969,9 +2059,9 @@ class UIManager {
     // Tax Spaces
     if (space.type === "tax") {
       const taxCost = space.cost;
-      this.game.log(`${player.name} paid ₽${taxCost} for ${space.name}.`);
+      this.game.log(`${player.name} paid $${taxCost} for ${space.name}.`);
       player.cash -= taxCost;
-      this.setDialogText(`Landed on ${space.name}. Paid ₽${taxCost} tax.`);
+      this.setDialogText(`Landed on ${space.name}. Paid $${taxCost} tax.`);
       this.resolveDuesCheck(playerIdx, null, () => {
         this.updateUI();
         if (player.isAI) {
@@ -2032,7 +2122,7 @@ class UIManager {
         this.showEncounterSprite(space.pokemon, "WILD ENCOUNTER!");
         
         // Show battle prompt controls
-        this.buyBtn.innerText = `BUY AT FULL (₽${space.cost})`;
+        this.buyBtn.innerText = `BUY AT FULL ($${space.cost})`;
         this.buyBtn.style.display = "inline-block";
         this.buyBtn.classList.add("btn-buy-small");
         
@@ -2105,21 +2195,23 @@ class UIManager {
       // AI lands on human's property: AI challenges human to a trainer battle!
       if (ownerIdx === 0) { // Owner is Human
         this.rollBtn.style.display = "none";
-        this.setDialogText(`${player.name} challenges you to a Trainer Battle for rent discount on ${space.name}!`);
+        this.setDialogText(`${player.name} landed on your property. Defend to try catching their Pokémon and collect rent, or safely collect rent now.`);
         this.isEncounterActive = true;
         this.showEncounterSprite(player.pokemon, `${player.name} CHALLENGE!`);
+        this.showRentPreviewCard(spaceId, player, owner, "collector");
+        const rentAmounts = this.getRentAmounts(spaceId);
         
         const acceptChallengeBtn = document.createElement("button");
         acceptChallengeBtn.className = "btn-comic btn-roll btn-battle-highlight";
         acceptChallengeBtn.id = "accept-challenge-btn";
-        acceptChallengeBtn.innerText = "DEFEND PROPERTY (Battle!)";
+        acceptChallengeBtn.innerText = `DEFEND PROPERTY (Win: Catch + ${this.formatMoney(rentAmounts.fullRent)})`;
         this.rollBtn.parentNode.appendChild(acceptChallengeBtn);
 
         // Also provide a fallback: pay full rent without battle
         const payRentFallbackBtn = document.createElement("button");
         payRentFallbackBtn.className = "btn-comic btn-buy btn-buy-small";
         payRentFallbackBtn.id = "pay-rent-fallback-btn";
-        payRentFallbackBtn.innerText = `COLLECT FULL RENT (₽${this.game.calculateRent(spaceId)})`;
+        payRentFallbackBtn.innerText = `COLLECT RENT +${this.formatMoney(rentAmounts.fullRent)}`;
         this.rollBtn.parentNode.appendChild(payRentFallbackBtn);
         
         const cleanupChallenge = () => {
@@ -2129,6 +2221,7 @@ class UIManager {
           if (ac) ac.remove();
           const prf = document.getElementById("pay-rent-fallback-btn");
           if (prf) prf.remove();
+          this.removeRentPreviewCard();
         };
 
         acceptChallengeBtn.addEventListener("click", () => {
@@ -2141,8 +2234,9 @@ class UIManager {
         payRentFallbackBtn.addEventListener("click", () => {
           cleanupChallenge();
           // Human owner just collects full rent without battling; AI pays normally
-          this.game.payRent(player.id, spaceId, 0);
-          this.setDialogText(`${player.name} pays full rent ₽${this.game.calculateRent(spaceId)} to you.`);
+          const rentResult = this.game.payRent(player.id, spaceId, 0);
+          this.showMoneyTransfer(rentResult.rent, player.name, owner.name, `${owner.name} collected ${this.formatMoney(rentResult.rent)} rent!`, this.gameContainer);
+          this.setDialogText(`${player.name} paid full rent ${this.formatMoney(rentResult.rent)} to you.`);
           this.resolveDuesCheck(player.id, 0, () => {
             this.updateUI();
             this.executeAITurnEnd();
@@ -2173,17 +2267,19 @@ class UIManager {
       this.setDialogText(`Landed on ${owner.name}'s property. Pay rent or Challenge Trainer to a battle?`);
       this.isEncounterActive = true;
       this.showEncounterSprite(owner.pokemon, "TRAINER CHALLENGE!");
+      this.showRentPreviewCard(spaceId, player, owner, "payer");
+      const rentAmounts = this.getRentAmounts(spaceId);
       
       const challengeBtn = document.createElement("button");
       challengeBtn.className = "btn-comic btn-roll btn-battle-highlight";
       challengeBtn.id = "trainer-battle-btn";
-      challengeBtn.innerText = "CHALLENGE OWNER (50% Rent on win / 1.5x on loss)";
+      challengeBtn.innerText = `CHALLENGE BATTLE (Win: ${this.formatMoney(rentAmounts.winRent)} / Lose: ${this.formatMoney(rentAmounts.lossRent)})`;
       this.buyBtn.parentNode.insertBefore(challengeBtn, this.buyBtn);
 
       const payBtn = document.createElement("button");
       payBtn.className = "btn-comic btn-buy btn-buy-small";
       payBtn.id = "pay-rent-btn";
-      payBtn.innerText = `PAY FULL RENT (₽${this.game.calculateRent(spaceId)})`;
+      payBtn.innerText = `PAY RENT ${this.formatMoney(rentAmounts.fullRent)}`;
       this.buyBtn.parentNode.insertBefore(payBtn, this.buyBtn);
 
       challengeBtn.addEventListener("click", () => {
@@ -2191,6 +2287,7 @@ class UIManager {
         this.hideEncounterSprite();
         challengeBtn.remove();
         payBtn.remove();
+        this.removeRentPreviewCard();
         this.promptPokemonSelection((selectedPoke) => {
           this.initiateTrainerBattle(selectedPoke, owner.pokemon, spaceId, player.id, owner.id);
         });
@@ -2201,8 +2298,10 @@ class UIManager {
         this.hideEncounterSprite();
         challengeBtn.remove();
         payBtn.remove();
-        this.game.payRent(player.id, spaceId, 0);
-        this.setDialogText(`Paid ₽${this.game.calculateRent(spaceId)} rent to ${owner.name}.`);
+        this.removeRentPreviewCard();
+        const rentResult = this.game.payRent(player.id, spaceId, 0);
+        this.showMoneyTransfer(rentResult.rent, player.name, owner.name, `Paid ${this.formatMoney(rentResult.rent)} rent to ${owner.name}`, this.gameContainer);
+        this.setDialogText(`Paid ${this.formatMoney(rentResult.rent)} rent to ${owner.name}. Cash left: ${this.formatMoney(player.cash)}.`);
         this.resolveDuesCheck(player.id, ownerIdx, () => {
           this.updateUI();
           this.endBtn.style.display = "inline-block";
@@ -2277,7 +2376,7 @@ class UIManager {
       // Must liquidate assets
       if (debtorIdx === 0) {
         // Human player: must mortgage things
-        this.setDialogText(`⚠️ You owe a debt of ₽${absoluteDebt}! Mortgage properties or sell Camps to clear balance.`);
+        this.setDialogText(`⚠️ You owe a debt of $${absoluteDebt}! Mortgage properties or sell Camps to clear balance.`);
         
         const resolveDebtBtn = document.createElement("button");
         resolveDebtBtn.className = "btn-comic btn-buy";
@@ -2291,7 +2390,7 @@ class UIManager {
             this.updateUI();
             callback();
           } else {
-            alert(`You are still short by ₽${Math.abs(player.cash)}. Mortgage more properties!`);
+            alert(`You are still short by $${Math.abs(player.cash)}. Mortgage more properties!`);
           }
         };
         resolveDebtBtn.addEventListener("click", checkDebt);
@@ -2624,7 +2723,7 @@ class UIManager {
           </div>
           <div class="mystery-actions">
             <button class="btn-comic mystery-battle">BATTLE & CATCH</button>
-            <button class="btn-comic mystery-bait">TOSS BAIT ₽50</button>
+            <button class="btn-comic mystery-bait">TOSS BAIT $50</button>
             <button class="btn-comic mystery-watch">WATCH CAREFULLY</button>
             <button class="btn-comic mystery-ignore">IGNORE</button>
           </div>
@@ -2764,7 +2863,7 @@ class UIManager {
     }
     if (encounter.quirk.cashBonus) {
       player.cash += encounter.quirk.cashBonus;
-      this.showCenterActionToast(`+₽${encounter.quirk.cashBonus} ${encounter.quirk.name} quirk!`, "money", this.gameContainer);
+      this.showCenterActionToast(`+$${encounter.quirk.cashBonus} ${encounter.quirk.name} quirk!`, "money", this.gameContainer);
     }
     if (encounter.quirk.pityBonus && this.game.mysteryEncounterState) {
       this.game.mysteryEncounterState.sinceLastEncounter += encounter.quirk.pityBonus;
@@ -2850,7 +2949,7 @@ class UIManager {
     this.hideEncounterSprite();
     this.setDialogText(message);
     this.updateUI();
-    this.buyBtn.innerText = `BUY AT FULL (₽${space.cost})`;
+    this.buyBtn.innerText = `BUY AT FULL ($${space.cost})`;
     this.buyBtn.classList.add("btn-buy-small");
     this.buyBtn.style.display = "inline-block";
     this.endBtn.innerText = "END TURN";
@@ -3122,7 +3221,7 @@ class UIManager {
     // Deduct ball cost
     if (costOfBall > 0) {
       player.cash -= costOfBall;
-      this.game.log(`${player.name} bought a ${this.selectedBall === "great" ? "Great Ball" : "Ultra Ball"} for ₽${costOfBall}.`);
+      this.game.log(`${player.name} bought a ${this.selectedBall === "great" ? "Great Ball" : "Ultra Ball"} for $${costOfBall}.`);
       this.updateUI();
     }
     this.ballCostPaid = true;
@@ -3353,7 +3452,7 @@ class UIManager {
       // Deduct ball cost
       if (costOfBall > 0) {
         player.cash -= costOfBall;
-        this.game.log(`${player.name} bought a ${this.selectedBall === "great" ? "Great Ball" : "Ultra Ball"} for ₽${costOfBall}.`);
+        this.game.log(`${player.name} bought a ${this.selectedBall === "great" ? "Great Ball" : "Ultra Ball"} for $${costOfBall}.`);
         this.updateUI();
       }
     }
@@ -3541,9 +3640,9 @@ class UIManager {
     player.cash += reward;
     const label = this.getCatchQualityRewardLabel(quality);
     const article = label === "Excellent" ? "an" : "a";
-    this.game.log(`${player.name} earned ₽${reward} for ${article} ${label} catch!`);
-    this.setDialogText(`${label} catch bonus! You earned ₽${reward}.`);
-    this.showCenterActionToast(`+₽${reward} ${label} catch!`, "money", this.catchOverlay);
+    this.game.log(`${player.name} earned $${reward} for ${article} ${label} catch!`);
+    this.setDialogText(`${label} catch bonus! You earned $${reward}.`);
+    this.showCenterActionToast(`+$${reward} ${label} catch!`, "money", this.catchOverlay);
     if (quality === "Excellent") this.awardEvolutionPoints(player, player.pokemon, 2, "Excellent catch", this.catchOverlay);
     else if (quality === "Great") this.awardEvolutionPoints(player, player.pokemon, 1, "Good catch", this.catchOverlay);
     this.updateUI();
@@ -3595,14 +3694,17 @@ class UIManager {
             if (success) {
               this.game.transferPropertyOwnership(spaceId, 0);
               this.awardEvolutionPoints(this.game.players[0], playerPoke, 2, "caught a Pokémon", this.gameContainer);
-              this.setDialogText(`GOTCHA! You caught ${enemyPoke} and claimed ownership of ${space.name} for FREE!`);
+              const savedRent = this.getRentAmounts(spaceId).fullRent;
+              this.showCenterActionToast(`Claimed property and saved ${this.formatMoney(savedRent)} rent!`, "money", this.gameContainer);
+              this.setDialogText(`GOTCHA! You caught ${enemyPoke}, paid $0 rent, and claimed ownership of ${space.name} for FREE!`);
               this.updateUI();
               this.resolveDuesCheck(0, null, () => {
                 this.endBtn.style.display = "inline-block";
               });
             } else {
-              this.setDialogText(`The Pokémon broke free and fled! You must pay 50% rent to ${owner.name}.`);
-              this.game.payRent(0, spaceId, 50);
+              const rentResult = this.game.payRent(0, spaceId, 50);
+              this.showMoneyTransfer(rentResult.rent, this.game.players[0].name, owner.name, `Battle discount rent: ${this.formatMoney(rentResult.rent)}`, this.gameContainer);
+              this.setDialogText(`The Pokémon broke free and fled! You paid discount rent ${this.formatMoney(rentResult.rent)} to ${owner.name}.`);
               this.resolveDuesCheck(0, ownerIdx, () => {
                 this.updateUI();
                 this.endBtn.style.display = "inline-block";
@@ -3610,8 +3712,9 @@ class UIManager {
             }
           });
         } else {
-          this.setDialogText(`Defeat! You lost trainer battle! Pay 1.5x rent penalty.`);
-          this.game.payRent(0, spaceId, -50);
+          const rentResult = this.game.payRent(0, spaceId, -50);
+          this.showMoneyTransfer(rentResult.rent, this.game.players[0].name, owner.name, `Penalty rent paid: ${this.formatMoney(rentResult.rent)}`, this.gameContainer);
+          this.setDialogText(`Defeat! You paid 1.5x penalty rent ${this.formatMoney(rentResult.rent)} to ${owner.name}.`);
           this.resolveDuesCheck(0, ownerIdx, () => {
             this.updateUI();
             this.endBtn.style.display = "inline-block";
@@ -3634,7 +3737,7 @@ class UIManager {
           this.awardEvolutionPoints(humanOwner, playerPoke, 2, "property defense", this.gameContainer);
           const rentResult = this.game.payRent(activePlayer.id, spaceId, 0);
           if (rentResult.rent > 0) {
-            this.showCenterActionToast(`Collected ₽${rentResult.rent} rent!`, "money", this.gameContainer);
+            this.showMoneyTransfer(rentResult.rent, activePlayer.name, humanOwner.name, `Defense won: collected ${this.formatMoney(rentResult.rent)} rent!`, this.gameContainer);
           }
           this.isEncounterActive = false;
           this.resolveDuesCheck(activePlayer.id, 0, () => {
@@ -3644,11 +3747,10 @@ class UIManager {
             });
           });
         } else {
-          this.game.degradeProperty(spaceId);
-          this.game.transferPropertyOwnership(spaceId, activePlayer.id);
-          this.setDialogText(`Defense failed! ${activePlayer.name} defeated you and claimed ownership of ${space.name} for FREE!`);
+          this.setDialogText(`Defense failed! ${activePlayer.name} avoided paying rent this time. You keep ${space.name}.`);
+          this.game.log(`Defense failed on ${space.name}. ${activePlayer.name} paid $0 rent, and ${owner.name} kept the property.`);
           this.isEncounterActive = false;
-          this.resolveDuesCheck(activePlayer.id, null, () => {
+          this.resolveDuesCheck(activePlayer.id, 0, () => {
             this.updateUI();
             setTimeout(() => this.executeAITurnEnd(), 800);
           });
@@ -3880,12 +3982,50 @@ class UIManager {
       this.setBattleLog("No battle items available.");
       return;
     }
-    const label = battleItems.map((item, idx) => `${idx + 1}. ${item.name} x${item.count} - ${item.text}`).join("\n");
-    const choice = prompt(`Choose a battle item:\n${label}\n\nEnter item number:`);
-    const idx = Number(choice) - 1;
-    const item = battleItems[idx];
-    if (!item) return;
-    this.useBattleItem(item.id);
+
+    if (!this.battleItemOverlay || !this.battleItemGrid) return;
+    this.battleItemGrid.innerHTML = battleItems.map(item => {
+      const usableState = this.getBattleItemUsableState(item);
+      return `
+      <button class="battle-item-card ${usableState.ok ? "" : "disabled"}" type="button" data-item-id="${this.escapeHTML(item.id)}" ${usableState.ok ? "" : "disabled"}>
+        <span class="battle-item-icon">${this.getBattleItemIcon(item)}</span>
+        <span class="battle-item-info">
+          <span class="battle-item-name">${this.escapeHTML(item.name)}</span>
+          <span class="battle-item-text">${this.escapeHTML(usableState.ok ? item.text : usableState.reason)}</span>
+        </span>
+        <span class="battle-item-count">x${item.count}</span>
+      </button>
+    `;
+    }).join("");
+
+    this.battleItemGrid.querySelectorAll(".battle-item-card").forEach(card => {
+      card.addEventListener("click", () => this.useBattleItem(card.getAttribute("data-item-id")));
+    });
+
+    this.battleItemOverlay.style.display = "flex";
+  }
+
+  hideBattleItemMenu() {
+    if (this.battleItemOverlay) this.battleItemOverlay.style.display = "none";
+  }
+
+  getBattleItemIcon(item) {
+    if (item.heal) return "✚";
+    const changes = item.stats || (item.stat ? [{ stat: item.stat }] : []);
+    const firstStat = changes[0]?.stat || "";
+    if (firstStat.includes("attack")) return "ATK";
+    if (firstStat.includes("defense")) return "DEF";
+    if (firstStat.includes("speed")) return "SPD";
+    return "ITEM";
+  }
+
+  getBattleItemUsableState(item) {
+    const battle = Battle.activeBattle;
+    if (!battle || !item) return { ok: false, reason: "No active battle." };
+    if (item.heal && battle.player.hp >= battle.player.maxHp) {
+      return { ok: false, reason: "Already at full HP." };
+    }
+    return { ok: true, reason: "" };
   }
 
   useBattleItem(itemId) {
@@ -3907,6 +4047,7 @@ class UIManager {
       return;
     }
     player.battleItemUsed = true;
+    this.hideBattleItemMenu();
     this.showCenterActionToast(result.message, "buff", this.battleOverlay);
     this.updateBattleHUDs();
     this.setBattleLog(result.message);
@@ -3983,7 +4124,7 @@ class UIManager {
       if (result.jailFineRequired) {
         const paidFine = this.game.payJailFine(ai);
         if (!paidFine) {
-          this.setDialogText(`${ai.name} needs ₽50 to leave detention.`);
+          this.setDialogText(`${ai.name} needs $50 to leave detention.`);
           setTimeout(() => this.executeAITurnEnd(), 1500);
           return;
         }

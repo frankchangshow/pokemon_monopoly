@@ -19,7 +19,7 @@ Updates:
 - Added collection locks and an evolution target picker: locked Pokémon cannot be selected as trade/evolution cost, and trading 3 can now evolve the partner or eligible unlocked collection Pokémon.
 - Verified locks/evolution in browser and confirmed locked/evolved collection state survives serialize/load.
 - Fixed buy-property UI feedback so failed purchases due to insufficient cash no longer claim success.
-- Added successful catch quality bonuses: Excellent ₽200, Good/Great ₽100, Nice ₽50.
+- Added successful catch quality bonuses: Excellent $200, Good/Great $100, Nice $50.
 - Added collection partner selection: a collection Pokémon can become the active board/battle partner, old partner returns to collection, and partner move sets are preserved per evolution base.
 - Verified partner switching/evolution in browser: Pawmi became the board partner, Sprigatito returned to collection, state survived serialize/load, and evolving the partner updated the board token to Pawmo.
 - Added prominent center-screen feedback for catch bonus money, player attack damage, damage numbers on hit targets, and rent collected after defending a property.
@@ -40,7 +40,7 @@ Updates:
 - Added rare Paldea battle data for Palafin, Baxcalibur, Gholdengo, Kingambit, Annihilape, Clodsire, Cyclizar, Flamigo, Glimmora, Farigiraf, Dudunsparce, and Maushold.
 - Added a comic-style mystery encounter modal with Battle & Catch, Toss Bait, Watch Carefully, and Ignore actions, plus fallback sprite cards so future generated sprites are not required for the feature to work now.
 - Added persistent collection metadata for mystery catches: source, encounter kind, rarity, shiny flag, quirk, and caught timestamp. The collection panel now shows shiny/kind/quirk badges and keeps metadata aligned when Pokémon are traded, evolved, moved to partner, or transferred.
-- Verified mystery encounter behavior with Playwright: forced Shiny Palafin modal rendered, fallback art displayed without broken images, bait deducted ₽50, collection badges appeared, metadata survived serialize/load, and no browser console errors were reported.
+- Verified mystery encounter behavior with Playwright: forced Shiny Palafin modal rendered, fallback art displayed without broken images, bait deducted $50, collection badges appeared, metadata survived serialize/load, and no browser console errors were reported.
 - Made `/api/log` uploads opt-in via `window.ENABLE_LOG_UPLOAD` so static local play/testing no longer logs a false 501 console error from the Python dev server.
 - Created branch `battle-engine-stat-integration` for the richer battle engine work.
 - Inspected `PokemonBattleEngine/` in parallel with sub-agents. It is a Python reference implementation with six official stats, physical/special/status moves, full 18-type chart, stat stages, status effects, Tera, weather/terrain hooks, and passing unit tests.
@@ -66,3 +66,7 @@ Updates:
 - Disabled AI auto-Terastallize because bots were bypassing the new Tera charge rules and becoming unfairly strong against the human player.
 - Added Evolution Points as a non-trade growth path: first evolution costs 8 EP, second evolution costs 12 EP, and passing GO gives +3 EP.
 - Added EP rewards for battle wins, successful catches, catch quality bonuses, Free Parking, and property defense wins. The collection panel now shows the active partner EP meter and enables an EVOLVE button when ready.
+- Made Monopoly money/rent more visible: all currency now uses `$`, owned-property landings show a rent preview card with exact pay/challenge win/loss amounts, rent payments animate as a center-screen money transfer, and battle rent outcomes announce the actual dollar amount paid or collected.
+- Replaced the browser prompt battle item chooser with an in-game Battle Bag modal. Items are selected by clicking comic-style cards, unusable items such as Potion at full HP are disabled with a reason, and successful item use closes the modal without any browser dialogs.
+- Rebalanced the right sidebar layout so Pokémon Collection gets the available vertical space instead of a fixed 250px cap. Adventure Log now stays at the bottom and expands into its own smaller scrollable panel.
+- Corrected property defense rules/messaging: defending is now upside-only under the current rules. Winning can catch the challenger Pokémon and collect rent; losing collects $0 but keeps the property.

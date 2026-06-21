@@ -3,8 +3,8 @@
  * Core state machine for player turns, board movements, real-estate, cards, trading, and mortgaging.
  */
 
-import { BoardSpaces, AcademyCards, TeraRaidCards } from './assets.js?v=34';
-import { Sound } from './sound.js?v=34';
+import { BoardSpaces, AcademyCards, TeraRaidCards } from './assets.js?v=38';
+import { Sound } from './sound.js?v=38';
 
 export const BattleItems = {
   potion: { id: "potion", name: "Potion", kind: "battle", text: "Restore 20 HP during battle.", heal: 20, rarity: "Common" },
@@ -574,7 +574,7 @@ export class GameEngine {
         player.jailTurns++;
         this.log(`${player.name} failed to roll doubles (Detention Turn ${player.jailTurns}/3).`);
         if (player.jailTurns >= 3) {
-          this.log(`${player.name} has spent 3 turns in detention. Must pay ₽50 fine to leave.`);
+          this.log(`${player.name} has spent 3 turns in detention. Must pay $50 fine to leave.`);
           // Forced payment and movement are handled by the caller so the UI can animate the roll.
           return { dice: this.dice, jailFineRequired: true, spacesMoved: die1 + die2 };
         }
@@ -598,7 +598,7 @@ export class GameEngine {
       if (!this.gameStats) this.gameStats = this.createGameStats();
       this.gameStats.totalPassesGo = (this.gameStats.totalPassesGo || 0) + 1;
       this.gameStats.passesGoByPlayer[player.id] = (this.gameStats.passesGoByPlayer[player.id] || 0) + 1;
-      this.log(`${player.name} passed GO and collected ₽200!`);
+      this.log(`${player.name} passed GO and collected $200!`);
       this.addEvolutionPoints(player, player.pokemon, 3, "passed GO");
       if (Math.random() < 0.5) {
         this.rechargeTera(player, "Tera Orb recharged while passing GO");
@@ -622,7 +622,7 @@ export class GameEngine {
       player.cash -= 50;
       player.inJail = false;
       player.jailTurns = 0;
-      this.log(`${player.name} paid ₽50 fine and left detention.`);
+      this.log(`${player.name} paid $50 fine and left detention.`);
       return true;
     }
     return false;
@@ -703,7 +703,7 @@ export class GameEngine {
       player.cash -= cost;
       this.ownership[spaceId] = playerIdx;
       this.buildings[spaceId] = 0;
-      this.log(`${player.name} bought ${space.name} (${space.pokemon}) for ₽${cost}!`);
+      this.log(`${player.name} bought ${space.name} (${space.pokemon}) for $${cost}!`);
       Sound.playBuyCamp();
       this.recalculatePlayerStats(playerIdx);
       return true;
@@ -734,7 +734,7 @@ export class GameEngine {
 
     payee.cash -= rent;
     owner.cash += rent;
-    this.log(`${payee.name} paid ₽${rent} rent to ${owner.name} for ${this.spaces[spaceId].name}.`);
+    this.log(`${payee.name} paid $${rent} rent to ${owner.name} for ${this.spaces[spaceId].name}.`);
     
     return { success: payee.cash >= 0, rent }; // Negative cash triggers mortgage/bankruptcy menu
   }
@@ -795,12 +795,12 @@ export class GameEngine {
       if (player.cash < space.houseCost) {
         return {
           ready: false,
-          message: `Need ₽${space.houseCost} to upgrade to a Gym Station (You have ₽${player.cash}).`
+          message: `Need $${space.houseCost} to upgrade to a Gym Station (You have $${player.cash}).`
         };
       }
       return {
         ready: true,
-        message: `Ready to upgrade to a Pokémon Gym Station for ₽${space.houseCost}!`
+        message: `Ready to upgrade to a Pokémon Gym Station for $${space.houseCost}!`
       };
     }
 
@@ -818,14 +818,14 @@ export class GameEngine {
     if (player.cash < space.houseCost) {
       return {
         ready: false,
-        message: `Need ₽${space.houseCost} to build a Camp (You have ₽${player.cash}).`
+        message: `Need $${space.houseCost} to build a Camp (You have $${player.cash}).`
       };
     }
 
     const nextCamp = currentCount + 1;
     return {
       ready: true,
-      message: `Ready to build Camp #${nextCamp} for ₽${space.houseCost}!`
+      message: `Ready to build Camp #${nextCamp} for $${space.houseCost}!`
     };
   }
 
@@ -859,7 +859,7 @@ export class GameEngine {
 
     player.cash -= space.houseCost;
     this.buildings[spaceId] = (this.buildings[spaceId] || 0) + 1;
-    this.log(`${player.name} set up a Camp on ${space.name} for ₽${space.houseCost}.`);
+    this.log(`${player.name} set up a Camp on ${space.name} for $${space.houseCost}.`);
     Sound.playBuyCamp();
     this.recalculatePlayerStats(playerIdx);
     return true;
@@ -891,7 +891,7 @@ export class GameEngine {
 
     player.cash -= space.houseCost;
     this.buildings[spaceId] = 5; // 5 represents Gym (Hotel)
-    this.log(`${player.name} upgraded Camp to a Pokémon Gym Station on ${space.name} for ₽${space.houseCost}!`);
+    this.log(`${player.name} upgraded Camp to a Pokémon Gym Station on ${space.name} for $${space.houseCost}!`);
     Sound.playBuyCamp();
     this.recalculatePlayerStats(playerIdx);
     return true;
@@ -910,7 +910,7 @@ export class GameEngine {
     this.buildings[spaceId] = bCount - 1;
     
     const itemSold = bCount === 5 ? "Gym Station" : "Camp";
-    this.log(`${player.name} sold ${itemSold} on ${space.name} for ₽${refund}.`);
+    this.log(`${player.name} sold ${itemSold} on ${space.name} for $${refund}.`);
     this.recalculatePlayerStats(playerIdx);
     return true;
   }
@@ -937,7 +937,7 @@ export class GameEngine {
     const value = Math.floor(space.cost / 2);
     player.cash += value;
     this.mortgages[spaceId] = true;
-    this.log(`${player.name} mortgaged ${space.name} for ₽${value}.`);
+    this.log(`${player.name} mortgaged ${space.name} for $${value}.`);
     return true;
   }
 
@@ -957,7 +957,7 @@ export class GameEngine {
     const cost = Math.floor((space.cost / 2) * 1.1);
     player.cash -= cost;
     this.mortgages[spaceId] = false;
-    this.log(`${player.name} unmortgaged ${space.name} for ₽${cost}.`);
+    this.log(`${player.name} unmortgaged ${space.name} for $${cost}.`);
     return true;
   }
 
@@ -998,7 +998,7 @@ export class GameEngine {
         }
       });
       player.cash -= totalCost;
-      this.log(`${player.name} paid ₽${totalCost} for repairs.`);
+      this.log(`${player.name} paid $${totalCost} for repairs.`);
     }
   }
 
