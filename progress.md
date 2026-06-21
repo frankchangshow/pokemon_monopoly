@@ -64,3 +64,5 @@ Updates:
 - Verified item/Tera behavior in browser: inventory renders in the collection panel, X Attack consumes once per battle and applies +1 Attack, Protein persists +1 Attack training, Free Parking recharges Tera and drops an item, and item/training/Tera state survives serialize/load.
 - Collapsed the Adventure Log by default into a compact SHOW/HIDE toggle so the right sidebar prioritizes trainers, inventory, and collection during normal play.
 - Disabled AI auto-Terastallize because bots were bypassing the new Tera charge rules and becoming unfairly strong against the human player.
+- Added Evolution Points as a non-trade growth path: first evolution costs 8 EP, second evolution costs 12 EP, and passing GO gives +3 EP.
+- Added EP rewards for battle wins, successful catches, catch quality bonuses, Free Parking, and property defense wins. The collection panel now shows the active partner EP meter and enables an EVOLVE button when ready.

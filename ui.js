@@ -3,10 +3,10 @@
  * Integrates assets, sounds, Monopoly engine, and Battle engine to render a dynamic comic-book game.
  */
 
-import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=33';
-import { Sound } from './sound.js?v=33';
-import { GameEngine, BattleItems } from './game.js?v=33';
-import { Battle } from './battle.js?v=33';
+import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=34';
+import { Sound } from './sound.js?v=34';
+import { GameEngine, BattleItems } from './game.js?v=34';
+import { Battle } from './battle.js?v=34';
 
 window.Battle = Battle;
 
@@ -1936,6 +1936,7 @@ class UIManager {
       const item = BattleItems[itemId];
       this.setDialogText(`Free Parking rest stop! ${recharged ? "Tera recharged. " : ""}Found ${item.name}.`);
       if (!player.isAI) this.showCenterActionToast(`Free Parking: ${item.name}!`, "money", this.gameContainer);
+      this.awardEvolutionPoints(player, player.pokemon, 1, "Free Parking", this.gameContainer);
       this.updateUI();
       if (player.isAI) {
         setTimeout(() => this.executeAITurnEnd(), 1500);
@@ -2707,6 +2708,7 @@ class UIManager {
       Sound.stopBattleBGM();
       this.battleOverlay.style.display = "none";
       this.awardBattleItemDrop(player, won, encounter.kind === "Titan" || encounter.rarity === "Ultra Rare" ? "rare" : "battle");
+      if (won) this.awardEvolutionPoints(player, playerPoke, 2, "battle win", this.gameContainer);
       if (!won) {
         this.setDialogText(`${encounter.name} escaped after the battle. The board goes quiet again.`);
         this.game.log(`Mystery encounter ${encounter.name} escaped after defeating ${playerPoke}.`);
@@ -2716,6 +2718,7 @@ class UIManager {
       this.initiateMysteryCatchMiniGame(encounter, success => {
         if (success) {
           this.addMysteryPokemonToCollection(encounter);
+          this.awardEvolutionPoints(player, playerPoke, 2, "caught a Pokémon", this.gameContainer);
           this.setDialogText(`${encounter.isShiny ? "Shiny " : ""}${encounter.name} joined your collection with ${encounter.quirk.name}!`);
           this.game.log(`✨ ${player.name} caught ${encounter.isShiny ? "Shiny " : ""}${encounter.name} (${encounter.kind}, ${encounter.quirk.name}).`);
           this.renderCollection();
@@ -2793,6 +2796,7 @@ class UIManager {
       Sound.stopBattleBGM();
       this.battleOverlay.style.display = "none";
       this.awardBattleItemDrop(this.game.players[0], won, "battle");
+      if (won) this.awardEvolutionPoints(this.game.players[0], playerPoke, 2, "battle win", this.gameContainer);
       if (won) {
         // human wins the battle: transition to the catch mini-game!
         this.initiateCatchMiniGame(spaceId, (success) => {
@@ -2806,6 +2810,7 @@ class UIManager {
               player0.collection.push(space.pokemon);
               player0.collectionMeta.push(null);
             }
+            this.awardEvolutionPoints(player0, playerPoke, 2, "caught a Pokémon", this.gameContainer);
             this.renderCollection();
             this.game.buyProperty(player0.id, spaceId, 100);
             this.setDialogText(`You caught and claimed ${space.name} for FREE!`);
@@ -3539,6 +3544,8 @@ class UIManager {
     this.game.log(`${player.name} earned ₽${reward} for ${article} ${label} catch!`);
     this.setDialogText(`${label} catch bonus! You earned ₽${reward}.`);
     this.showCenterActionToast(`+₽${reward} ${label} catch!`, "money", this.catchOverlay);
+    if (quality === "Excellent") this.awardEvolutionPoints(player, player.pokemon, 2, "Excellent catch", this.catchOverlay);
+    else if (quality === "Great") this.awardEvolutionPoints(player, player.pokemon, 1, "Good catch", this.catchOverlay);
     this.updateUI();
   }
 
@@ -3575,6 +3582,7 @@ class UIManager {
       Sound.stopBattleBGM();
       this.battleOverlay.style.display = "none";
       this.awardBattleItemDrop(this.game.players[playerSideIdx], won, won ? "battle" : "loss");
+      if (won) this.awardEvolutionPoints(this.game.players[playerSideIdx], playerPoke, 2, "battle win", this.gameContainer);
       
       const activePlayer = this.game.getCurrentPlayer();
       const space = this.game.spaces[spaceId];
@@ -3586,6 +3594,7 @@ class UIManager {
           this.initiateCatchMiniGame(spaceId, (success) => {
             if (success) {
               this.game.transferPropertyOwnership(spaceId, 0);
+              this.awardEvolutionPoints(this.game.players[0], playerPoke, 2, "caught a Pokémon", this.gameContainer);
               this.setDialogText(`GOTCHA! You caught ${enemyPoke} and claimed ownership of ${space.name} for FREE!`);
               this.updateUI();
               this.resolveDuesCheck(0, null, () => {
@@ -3622,6 +3631,7 @@ class UIManager {
           this.renderCollection();
           this.setDialogText(`Property defended! You caught ${enemyPoke}, and ${activePlayer.name} pays full rent.`);
           this.game.log(`🛡️ Property defended! You caught ${enemyPoke} from ${activePlayer.name}.`);
+          this.awardEvolutionPoints(humanOwner, playerPoke, 2, "property defense", this.gameContainer);
           const rentResult = this.game.payRent(activePlayer.id, spaceId, 0);
           if (rentResult.rent > 0) {
             this.showCenterActionToast(`Collected ₽${rentResult.rent} rent!`, "money", this.gameContainer);
@@ -3915,6 +3925,13 @@ class UIManager {
     return itemId;
   }
 
+  awardEvolutionPoints(player, pokemonName, points, reason, host = this.gameContainer) {
+    if (!player || player.isAI || !pokemonName || points <= 0) return;
+    this.game.addEvolutionPoints(player, pokemonName, points, reason);
+    this.showCenterActionToast(`+${points} EP ${pokemonName}!`, "buff", host);
+    this.updateUI();
+  }
+
 
   /* --- ASYNC AI GAMEPLAY TURNS --- */
   executeAITurn() {
@@ -4148,13 +4165,18 @@ class UIManager {
     container.querySelectorAll(".inventory-chip.usable").forEach(button => {
       button.addEventListener("click", () => this.useInventoryItem(button.getAttribute("data-item-id")));
     });
+    const evolveWithEpBtn = document.getElementById("evolve-with-ep-btn");
+    if (evolveWithEpBtn && !evolveWithEpBtn.disabled) {
+      evolveWithEpBtn.addEventListener("click", () => this.evolvePartnerWithEvolutionPoints());
+    }
   }
 
   renderInventoryPanel(player) {
     const entries = Object.entries(player.inventory || {}).filter(([itemId, count]) => BattleItems[itemId] && count > 0);
     const teraText = `${player.teraCharge || 0}/${player.maxTeraCharge || 1}`;
+    const evolutionPanel = this.renderEvolutionProgressPanel(player);
     if (!entries.length) {
-      return `<div class="inventory-panel"><div class="inventory-title">ITEMS <span>TERA ${teraText}</span></div><div class="inventory-empty">Win battles or visit Free Parking to find items.</div></div>`;
+      return `${evolutionPanel}<div class="inventory-panel"><div class="inventory-title">ITEMS <span>TERA ${teraText}</span></div><div class="inventory-empty">Win battles or visit Free Parking to find items.</div></div>`;
     }
     const itemButtons = entries.map(([itemId, count]) => {
       const item = BattleItems[itemId];
@@ -4166,10 +4188,36 @@ class UIManager {
       `;
     }).join("");
     return `
+      ${evolutionPanel}
       <div class="inventory-panel">
         <div class="inventory-title">ITEMS <span>TERA ${teraText}</span></div>
         <div class="inventory-list">${itemButtons}</div>
         <div class="inventory-note">Training items apply to your current board partner. Battle items are used during fights.</div>
+      </div>
+    `;
+  }
+
+  renderEvolutionProgressPanel(player) {
+    const pokemonName = player.pokemon;
+    const points = this.game.getEvolutionPoints(player, pokemonName);
+    const required = this.game.getEvolutionPointRequirement(player, pokemonName);
+    const nextNames = this.getNextEvolutionNames(pokemonName);
+    const canEvolve = points >= required;
+    const pct = Math.min(100, Math.round((points / required) * 100));
+    const nextLabel = nextNames.length ? `Next: ${nextNames.join(" / ")}` : "Fully evolved: EP gives bonus levels";
+    return `
+      <div class="evolution-progress-panel">
+        <div class="evolution-progress-head">
+          <span>${this.escapeHTML(pokemonName)} EP</span>
+          <strong>${points}/${required}</strong>
+        </div>
+        <div class="evolution-progress-track">
+          <div class="evolution-progress-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="evolution-progress-foot">
+          <span>${this.escapeHTML(nextLabel)}</span>
+          <button class="evolution-progress-btn" id="evolve-with-ep-btn" ${canEvolve ? "" : "disabled"}>${nextNames.length ? "EVOLVE" : "+LEVEL"}</button>
+        </div>
       </div>
     `;
   }
@@ -4483,6 +4531,43 @@ class UIManager {
       if (event.target === overlay) overlay.style.display = "none";
     });
     return overlay;
+  }
+
+  evolvePartnerWithEvolutionPoints() {
+    const player = this.game.players[0];
+    const currentName = player.pokemon;
+    const nextNames = this.getNextEvolutionNames(currentName);
+    if (!this.game.spendEvolutionPoints(player, currentName)) {
+      const points = this.game.getEvolutionPoints(player, currentName);
+      const required = this.game.getEvolutionPointRequirement(player, currentName);
+      this.setDialogText(`${currentName} needs ${required - points} more EP to evolve.`);
+      return;
+    }
+
+    if (!nextNames.length) {
+      const baseName = this.game.normalizePokemonName(player, currentName);
+      player.pokemonBonusLevels[baseName] = (player.pokemonBonusLevels[baseName] || 0) + 1;
+      this.game.recalculatePlayerStats(0);
+      this.game.log(`${currentName} used 10 EP for +1 bonus level!`);
+      this.setDialogText(`${currentName} is fully evolved and gained +1 bonus level!`);
+      this.showCenterActionToast(`${currentName} +1 level!`, "buff", this.gameContainer);
+      this.renderCollection();
+      this.updateUI();
+      return;
+    }
+
+    const nextName = nextNames[0];
+    const baseName = this.game.normalizePokemonName(player, currentName);
+    const chain = this.game.getEvolutionChain(baseName);
+    const newStage = this.game.getStageOfPokemon(chain, nextName);
+    player.pokemonEvolutionStages[baseName] = Math.max(0, newStage);
+    player.pokemon = nextName;
+    this.game.recalculatePlayerStats(0);
+    this.game.log(`${currentName} evolved into ${nextName} using Evolution Points!`);
+    this.setDialogText(`${currentName} evolved into ${nextName}!`);
+    this.showCenterActionToast(`${nextName} evolved!`, "buff", this.gameContainer);
+    this.renderCollection();
+    this.updateUI();
   }
 
   confirmEvolutionTrade(costIndices, target) {

@@ -3,8 +3,8 @@
  * Core state machine for player turns, board movements, real-estate, cards, trading, and mortgaging.
  */
 
-import { BoardSpaces, AcademyCards, TeraRaidCards } from './assets.js?v=33';
-import { Sound } from './sound.js?v=33';
+import { BoardSpaces, AcademyCards, TeraRaidCards } from './assets.js?v=34';
+import { Sound } from './sound.js?v=34';
 
 export const BattleItems = {
   potion: { id: "potion", name: "Potion", kind: "battle", text: "Restore 20 HP during battle.", heal: 20, rarity: "Common" },
@@ -74,6 +74,7 @@ export class GameEngine {
         pokemonLevelUps: {},
         pokemonBonusLevels: {},
         pokemonEvolutionStages: {},
+        pokemonEvolutionPoints: {},
         pokemonTraining: {},
         inventory: { potion: 2, xAttack: 1, xDefense: 1 },
         teraCharge: 1,
@@ -108,6 +109,7 @@ export class GameEngine {
         pokemonLevelUps: {},
         pokemonBonusLevels: {},
         pokemonEvolutionStages: {},
+        pokemonEvolutionPoints: {},
         pokemonTraining: {},
         inventory: { potion: 1 },
         teraCharge: 1,
@@ -142,6 +144,7 @@ export class GameEngine {
         pokemonLevelUps: {},
         pokemonBonusLevels: {},
         pokemonEvolutionStages: {},
+        pokemonEvolutionPoints: {},
         pokemonTraining: {},
         inventory: { potion: 1 },
         teraCharge: 1,
@@ -176,6 +179,7 @@ export class GameEngine {
         pokemonLevelUps: {},
         pokemonBonusLevels: {},
         pokemonEvolutionStages: {},
+        pokemonEvolutionPoints: {},
         pokemonTraining: {},
         inventory: { potion: 1 },
         teraCharge: 1,
@@ -408,6 +412,7 @@ export class GameEngine {
       pokemonLevelUps: {},
       pokemonBonusLevels: {},
       pokemonEvolutionStages: {},
+      pokemonEvolutionPoints: {},
       pokemonTraining: {},
       inventory: {},
       teraCharge: 1,
@@ -594,6 +599,7 @@ export class GameEngine {
       this.gameStats.totalPassesGo = (this.gameStats.totalPassesGo || 0) + 1;
       this.gameStats.passesGoByPlayer[player.id] = (this.gameStats.passesGoByPlayer[player.id] || 0) + 1;
       this.log(`${player.name} passed GO and collected ₽200!`);
+      this.addEvolutionPoints(player, player.pokemon, 3, "passed GO");
       if (Math.random() < 0.5) {
         this.rechargeTera(player, "Tera Orb recharged while passing GO");
       }
@@ -1140,6 +1146,7 @@ export class GameEngine {
     if (!player.pokemonLevelUps) player.pokemonLevelUps = {};
     if (!player.pokemonBonusLevels) player.pokemonBonusLevels = {};
     if (!player.pokemonEvolutionStages) player.pokemonEvolutionStages = {};
+    if (!player.pokemonEvolutionPoints) player.pokemonEvolutionPoints = {};
     if (!player.pokemonTraining) player.pokemonTraining = {};
     if (!player.starterBase) player.starterBase = player.baseStarter || this.normalizePokemonName(player, player.pokemon);
     this.normalizePlayerItems(player);
@@ -1171,6 +1178,43 @@ export class GameEngine {
     const levelUps = player.pokemonLevelUps ? (player.pokemonLevelUps[normName] || 0) : 0;
     const bonusLevels = player.pokemonBonusLevels ? (player.pokemonBonusLevels[normName] || 0) : 0;
     return this.getPokemonBaseLevel(player, pokemonName) + levelUps + bonusLevels;
+  }
+
+  getEvolutionPointRequirement(player, pokemonName) {
+    this.ensurePokemonProgress(player);
+    const baseName = this.normalizePokemonName(player, pokemonName);
+    const chain = this.getEvolutionChain(baseName);
+    if (!chain) return 10;
+    const stage = Math.max(0, this.getStageOfPokemon(chain, pokemonName));
+    if (stage <= 0) return 8;
+    if (stage === 1) return 12;
+    return 10;
+  }
+
+  getEvolutionPoints(player, pokemonName) {
+    this.ensurePokemonProgress(player);
+    const baseName = this.normalizePokemonName(player, pokemonName);
+    return Math.max(0, Math.floor(Number(player.pokemonEvolutionPoints[baseName]) || 0));
+  }
+
+  addEvolutionPoints(player, pokemonName, points, reason = "progress") {
+    if (!player || !pokemonName || !Number.isFinite(points) || points <= 0) return 0;
+    this.ensurePokemonProgress(player);
+    const baseName = this.normalizePokemonName(player, pokemonName);
+    const amount = Math.floor(points);
+    player.pokemonEvolutionPoints[baseName] = this.getEvolutionPoints(player, pokemonName) + amount;
+    this.log(`${player.name}'s ${pokemonName} gained +${amount} Evolution Points (${reason}).`);
+    return player.pokemonEvolutionPoints[baseName];
+  }
+
+  spendEvolutionPoints(player, pokemonName) {
+    this.ensurePokemonProgress(player);
+    const baseName = this.normalizePokemonName(player, pokemonName);
+    const required = this.getEvolutionPointRequirement(player, pokemonName);
+    const current = this.getEvolutionPoints(player, pokemonName);
+    if (current < required) return false;
+    player.pokemonEvolutionPoints[baseName] = current - required;
+    return true;
   }
 
   degradeProperty(spaceId) {

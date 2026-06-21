@@ -3,8 +3,8 @@
  * Handles move execution, type matchups, CPU AI, logs, Terastallization, and resolution callbacks.
  */
 
-import { PokemonDB, PokemonBattleStats } from './assets.js?v=33';
-import { Sound } from './sound.js?v=33';
+import { PokemonDB, PokemonBattleStats } from './assets.js?v=34';
+import { Sound } from './sound.js?v=34';
 
 const ALL_STATS = ["hp", "attack", "defense", "specialAttack", "specialDefense", "speed"];
 const PLAYER_MIN_MOVE_POWER = 30;
