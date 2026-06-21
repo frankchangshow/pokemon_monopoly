@@ -662,7 +662,9 @@ export const PokemonDB = {
   Garganacl: { name: "Garganacl", type: "Rock", hp: 170, moves: [{ name: "Salt Cure", type: "Rock", power: 38, text: "CORROSIVE SALT SHIELD!" }, { name: "Stone Edge", type: "Rock", power: 45, text: "SHARP ROCK SPIRES!" }, { name: "Hammer Arm", type: "Fighting", power: 40, text: "HEAVY FIST HAMMER!" }], speed: 55 },
   Toedscruel: { name: "Toedscruel", type: "Ground", hp: 145, moves: [{ name: "Mud-Slap", type: "Ground", power: 18, text: "Sling muddy water!" }, { name: "Earth Power", type: "Ground", power: 36, text: "TERRA BURST!" }, { name: "Giga Drain", type: "Grass", power: 32, text: "Spore siphon!" }], speed: 85 },
   Scovillain: { name: "Scovillain", type: "Grass", hp: 130, moves: [{ name: "Bullet Seed", type: "Grass", power: 20, text: "Spit seeds!" }, { name: "Fire Fang", type: "Fire", power: 32, text: "SPICY BITE!" }, { name: "Overheat", type: "Fire", power: 45, text: "APOCALYPSE BURN!" }], speed: 75 },
-  Kilowattrel: { name: "Kilowattrel", type: "Electric", hp: 135, moves: [{ name: "Spark", type: "Electric", power: 18, text: "Fly spark!" }, { name: "Hurricane", type: "Flying", power: 35, text: "WIND BLAST!" }, { name: "Electro Ball", type: "Electric", power: 42, text: "BALL OF ELECTRICITY!" }], speed: 105 }
+  Kilowattrel: { name: "Kilowattrel", type: "Electric", hp: 135, moves: [{ name: "Spark", type: "Electric", power: 18, text: "Fly spark!" }, { name: "Hurricane", type: "Flying", power: 35, text: "WIND BLAST!" }, { name: "Electro Ball", type: "Electric", power: 42, text: "BALL OF ELECTRICITY!" }], speed: 105 },
+  Tinkatuff: { name: "Tinkatuff", type: "Fairy", hp: 110, moves: [{ name: "Play Rough", type: "Fairy", power: 15, text: "Bouncy headbutt!" }, { name: "Metal Claw", type: "Steel", power: 28, text: "Medium hammer swing!" }, { name: "Draining Kiss", type: "Fairy", power: 22, text: "Suck HP!" }], speed: 50 },
+  Armarouge: { name: "Armarouge", type: "Fire", hp: 125, moves: [{ name: "Mystical Fire", type: "Fire", power: 18, text: "Spit magical flames!" }, { name: "Armor Cannon", type: "Fire", power: 42, text: "BOOM! FIRE BURST!" }, { name: "Psychic", type: "Psychic", power: 35, text: "Telekinetic blast!" }], speed: 75 }
 };
 
 export const PokemonBattleStats = {
@@ -723,7 +725,9 @@ export const PokemonBattleStats = {
   Garganacl: { types: ["Rock"], stats: { hp: 100, attack: 100, defense: 130, specialAttack: 45, specialDefense: 90, speed: 35 } },
   Toedscruel: { types: ["Ground", "Grass"], stats: { hp: 80, attack: 70, defense: 65, specialAttack: 80, specialDefense: 120, speed: 100 } },
   Scovillain: { types: ["Grass", "Fire"], stats: { hp: 65, attack: 108, defense: 65, specialAttack: 108, specialDefense: 65, speed: 75 } },
-  Kilowattrel: { types: ["Electric", "Flying"], stats: { hp: 70, attack: 70, defense: 60, specialAttack: 105, specialDefense: 60, speed: 125 } }
+  Kilowattrel: { types: ["Electric", "Flying"], stats: { hp: 70, attack: 70, defense: 60, specialAttack: 105, specialDefense: 60, speed: 125 } },
+  Tinkatuff: { types: ["Fairy", "Steel"], stats: { hp: 65, attack: 55, defense: 55, specialAttack: 45, specialDefense: 82, speed: 78 } },
+  Armarouge: { types: ["Fire", "Psychic"], stats: { hp: 85, attack: 60, defense: 100, specialAttack: 125, specialDefense: 80, speed: 75 } }
 };
 
 export const SpecialSVGs = {

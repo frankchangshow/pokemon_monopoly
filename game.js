@@ -316,13 +316,22 @@ export class GameEngine {
     const chain = this.getEvolutionChain(activeBase);
 
     if (chain) {
+      const currentStage = this.getStageOfPokemon(chain, player.pokemon);
       const savedStage = Number.isInteger(player.pokemonEvolutionStages[activeBase])
         ? player.pokemonEvolutionStages[activeBase]
-        : Math.max(0, chain.indexOf(player.pokemon));
+        : Math.max(0, currentStage);
       const finalStage = Math.max(0, Math.min(savedStage, chain.length - 1));
       player.pokemonEvolutionStages[activeBase] = finalStage;
       player.evolveStage = finalStage;
-      player.pokemon = chain[finalStage];
+
+      const stageContent = chain[finalStage];
+      if (Array.isArray(stageContent)) {
+        if (!stageContent.includes(player.pokemon)) {
+          player.pokemon = stageContent[0];
+        }
+      } else {
+        player.pokemon = stageContent;
+      }
     } else {
       player.evolveStage = 0;
     }
@@ -923,7 +932,13 @@ export class GameEngine {
   normalizePokemonName(player, pokemonName) {
     if (!player) return pokemonName;
     for (const [baseStarter, evos] of Object.entries(this.getEvolutionChains())) {
-      if (evos.includes(pokemonName)) {
+      const isMatch = evos.some(evo => {
+        if (Array.isArray(evo)) {
+          return evo.includes(pokemonName);
+        }
+        return evo === pokemonName;
+      });
+      if (isMatch) {
         return baseStarter; // map evolutions back to base starter name
       }
     }
@@ -936,8 +951,8 @@ export class GameEngine {
       "Fuecoco": ["Fuecoco", "Crocalor", "Skeledirge"],
       "Quaxly": ["Quaxly", "Quaxwell", "Quaquaval"],
       "Pawmi": ["Pawmi", "Pawmo", "Pawmot"],
-      "Tinkatink": ["Tinkatink", "Tinkaton"],
-      "Charcadet": ["Charcadet", "Ceruledge"],
+      "Tinkatink": ["Tinkatink", "Tinkatuff", "Tinkaton"],
+      "Charcadet": ["Charcadet", ["Ceruledge", "Armarouge"]],
       "Shroodle": ["Shroodle", "Grafaiai"],
       "Tandemaus": ["Tandemaus", "Maushold"],
       "Lechonk": ["Lechonk", "Oinkologne"],
@@ -955,6 +970,19 @@ export class GameEngine {
     return this.getEvolutionChains()[basePokemon] || null;
   }
 
+  getStageOfPokemon(chain, pokemonName) {
+    if (!chain) return -1;
+    for (let i = 0; i < chain.length; i++) {
+      const element = chain[i];
+      if (Array.isArray(element)) {
+        if (element.includes(pokemonName)) return i;
+      } else if (element === pokemonName) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   ensurePokemonProgress(player) {
     if (!player) return player;
     if (!player.pokemonLevelUps) player.pokemonLevelUps = {};
@@ -965,7 +993,7 @@ export class GameEngine {
     const activeBase = this.normalizePokemonName(player, player.pokemon);
     const chain = this.getEvolutionChain(activeBase);
     if (chain && !Number.isInteger(player.pokemonEvolutionStages[activeBase])) {
-      const currentStage = Math.max(0, chain.indexOf(player.pokemon));
+      const currentStage = Math.max(0, this.getStageOfPokemon(chain, player.pokemon));
       const legacyStage = Number.isInteger(player.evolutionUpgrades) ? player.evolutionUpgrades : 0;
       player.pokemonEvolutionStages[activeBase] = Math.min(Math.max(currentStage, legacyStage), chain.length - 1);
     }

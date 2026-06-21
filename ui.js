@@ -17,7 +17,7 @@ const AVAILABLE_PNGS = [
   "tarountula", "corviknight", "tandemaus", "rotom", "nacli", "orthworm", "toedscool", "capsakid", "grafaiai", "shroodle", "wattrel", "bellibolt",
   "dondozo", "tatsugiri", "veluza",
   "annihilape", "baxcalibur", "clodsire", "cyclizar", "dudunsparce", "farigiraf", "flamigo", "gholdengo", "glimmora", "kingambit", "maushold", "palafin",
-  "oinkologne", "spidops", "dachsbun", "dolliv", "arboliva", "naclstack", "garganacl", "toedscruel", "scovillain", "kilowattrel",
+  "oinkologne", "spidops", "dachsbun", "dolliv", "arboliva", "naclstack", "garganacl", "toedscruel", "scovillain", "kilowattrel", "tinkatuff", "armarouge",
   "sprigatito_tera", "fuecoco_tera", "quaxly_tera", "pawmi_tera",
   "go_sprite", "jail_sprite", "free_parking_sprite", "go_to_jail_sprite",
   "go_full", "jail_full", "free_parking_full", "go_to_jail_full",
@@ -4085,7 +4085,7 @@ class UIManager {
     const oldBase = this.game.normalizePokemonName(player, oldPartner);
     const oldChain = this.game.getEvolutionChain(oldBase);
     if (oldChain) {
-      player.pokemonEvolutionStages[oldBase] = Math.max(0, oldChain.indexOf(oldPartner));
+      player.pokemonEvolutionStages[oldBase] = Math.max(0, this.game.getStageOfPokemon(oldChain, oldPartner));
     }
     if (Array.isArray(player.partnerMoves)) {
       player.partnerMoveSets[oldBase] = player.partnerMoves.map(move => ({ ...move }));
@@ -4093,7 +4093,7 @@ class UIManager {
 
     const nextBase = this.game.normalizePokemonName(player, nextPartner);
     const chain = this.game.getEvolutionChain(nextBase);
-    const selectedStage = chain ? Math.max(0, chain.indexOf(nextPartner)) : 0;
+    const selectedStage = chain ? Math.max(0, this.game.getStageOfPokemon(chain, nextPartner)) : 0;
 
     player.collection.splice(idx, 1);
     player.collectionMeta.splice(idx, 1);
@@ -4122,15 +4122,44 @@ class UIManager {
   getEvolutionChainForPokemon(pokemonName) {
     if (!this.game) return null;
     const chains = Object.values(this.game.getEvolutionChains());
-    return chains.find(chain => chain.includes(pokemonName)) || null;
+    return chains.find(chain => {
+      return chain.some(element => {
+        if (Array.isArray(element)) {
+          return element.includes(pokemonName);
+        }
+        return element === pokemonName;
+      });
+    }) || null;
+  }
+
+  getNextEvolutionNames(pokemonName) {
+    const chain = this.getEvolutionChainForPokemon(pokemonName);
+    if (!chain) return [];
+    let idx = -1;
+    for (let i = 0; i < chain.length; i++) {
+      const element = chain[i];
+      if (Array.isArray(element)) {
+        if (element.includes(pokemonName)) {
+          idx = i;
+          break;
+        }
+      } else if (element === pokemonName) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx === -1) return [];
+    const nextElement = chain[idx + 1];
+    if (!nextElement) return [];
+    if (Array.isArray(nextElement)) {
+      return nextElement.filter(name => PokemonDB[name]);
+    }
+    return PokemonDB[nextElement] ? [nextElement] : [];
   }
 
   getNextEvolutionName(pokemonName) {
-    const chain = this.getEvolutionChainForPokemon(pokemonName);
-    if (!chain) return null;
-    const idx = chain.indexOf(pokemonName);
-    const nextName = chain[idx + 1];
-    return nextName && PokemonDB[nextName] ? nextName : null;
+    const nextNames = this.getNextEvolutionNames(pokemonName);
+    return nextNames.length > 0 ? nextNames[0] : null;
   }
 
   getPokemonSpriteHTML(pokemonName, className = "") {
@@ -4145,27 +4174,41 @@ class UIManager {
   getEvolutionTargets(costIndices) {
     const player = this.game.players[0];
     const targets = [];
-    const partnerNext = this.getNextEvolutionName(player.pokemon);
-    targets.push({
-      type: "partner",
-      label: "Partner",
-      name: player.pokemon,
-      nextName: partnerNext,
-      detail: partnerNext ? `Evolve to ${partnerNext}` : "Fully evolved: gain +2 levels"
-    });
+    
+    const partnerNexts = this.getNextEvolutionNames(player.pokemon);
+    if (partnerNexts.length > 0) {
+      partnerNexts.forEach(nextName => {
+        targets.push({
+          type: "partner",
+          label: "Partner",
+          name: player.pokemon,
+          nextName: nextName,
+          detail: `Evolve to ${nextName}`
+        });
+      });
+    } else {
+      targets.push({
+        type: "partner",
+        label: "Partner",
+        name: player.pokemon,
+        nextName: null,
+        detail: "Fully evolved: gain +2 levels"
+      });
+    }
 
     player.collection.forEach((pokemonName, idx) => {
       if (costIndices.includes(idx)) return;
       if (this.isCollectionPokemonLocked(player, pokemonName)) return;
-      const nextName = this.getNextEvolutionName(pokemonName);
-      if (!nextName) return;
-      targets.push({
-        type: "collection",
-        index: idx,
-        label: "Collection",
-        name: pokemonName,
-        nextName,
-        detail: `Evolve to ${nextName}`
+      const nextNames = this.getNextEvolutionNames(pokemonName);
+      nextNames.forEach(nextName => {
+        targets.push({
+          type: "collection",
+          index: idx,
+          label: "Collection",
+          name: pokemonName,
+          nextName,
+          detail: `Evolve to ${nextName}`
+        });
       });
     });
     return targets;
@@ -4268,10 +4311,9 @@ class UIManager {
       const baseName = this.game.normalizePokemonName(player, oldPoke);
       const chain = this.game.getEvolutionChain(baseName);
       if (target.nextName) {
-        const currentStage = chain ? Math.max(0, chain.indexOf(oldPoke)) : 0;
-        player.pokemonEvolutionStages[baseName] = chain
-          ? Math.min(currentStage + 1, chain.length - 1)
-          : currentStage;
+        const newStage = this.game.getStageOfPokemon(chain, target.nextName);
+        player.pokemonEvolutionStages[baseName] = Math.max(0, newStage);
+        player.pokemon = target.nextName;
         this.game.recalculatePlayerStats(0);
         this.game.log(`🔄 Traded 3 Pokémon (${tradedNames.join(", ")}) to evolve partner ${oldPoke} into ${player.pokemon}!`);
         this.setDialogText(`Evolved! Partner evolved from ${oldPoke} to ${player.pokemon}!`);
