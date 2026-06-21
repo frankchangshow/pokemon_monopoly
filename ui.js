@@ -1022,54 +1022,6 @@ class UIManager {
     };
   }
 
-  removeRentPreviewCard() {
-    const card = document.getElementById("rent-preview-card");
-    if (card) card.remove();
-  }
-
-  showRentPreviewCard(spaceId, payer, owner, mode = "payer") {
-    if (!this.actionBox || !payer || !owner) return;
-    this.removeRentPreviewCard();
-
-    const space = this.game.spaces[spaceId];
-    const { fullRent, winRent, lossRent } = this.getRentAmounts(spaceId);
-    const payerName = this.escapeHTML(payer.name);
-    const ownerName = this.escapeHTML(owner.name);
-    const title = mode === "collector" ? "Rent Incoming" : "Rent Due";
-    const safeLabel = mode === "collector" ? "Collect full rent" : "Pay now";
-    const challengeWin = mode === "collector"
-      ? `Win defense: catch Pokémon + collect ${this.formatMoney(fullRent)}`
-      : `Win battle: 50% rent (${this.formatMoney(winRent)}) + catch chance`;
-    const challengeLose = mode === "collector"
-      ? "Lose defense: collect $0, keep property"
-      : `Lose battle: 150% rent (${this.formatMoney(lossRent)})`;
-
-    const card = document.createElement("div");
-    card.id = "rent-preview-card";
-    card.className = `rent-preview-card ${mode}`;
-    card.innerHTML = `
-      <div class="rent-preview-header">
-        <span>${title}</span>
-        <strong>${this.formatMoney(fullRent)}</strong>
-      </div>
-      <div class="rent-preview-property">${this.escapeHTML(space.name)} · ${payerName} → ${ownerName}</div>
-      <div class="rent-preview-grid">
-        <div class="rent-preview-option safe">
-          <span>${safeLabel}</span>
-          <strong>${mode === "collector" ? "+" : "-"}${this.formatMoney(fullRent)}</strong>
-        </div>
-        <div class="rent-preview-option win">
-          <span>${challengeWin}</span>
-        </div>
-        <div class="rent-preview-option lose">
-          <span>${challengeLose}</span>
-        </div>
-      </div>
-    `;
-
-    this.actionBox.insertBefore(card, this.actionBox.firstChild);
-  }
-
   showMoneyTransfer(amount, fromName, toName, message, host = null) {
     const value = Math.max(0, Math.floor(Number(amount) || 0));
     if (value <= 0) return;
@@ -1917,7 +1869,6 @@ class UIManager {
       const btn = document.getElementById(id);
       if (btn) btn.remove();
     });
-    this.removeRentPreviewCard();
     this.activePassHandler = null;
     this.endBtn.innerText = "END TURN";
 
@@ -2214,16 +2165,15 @@ class UIManager {
       // AI lands on human's property: AI challenges human to a trainer battle!
       if (ownerIdx === 0) { // Owner is Human
         this.rollBtn.style.display = "none";
-        this.setDialogText(`${player.name} landed on your property. Defend to try catching their Pokémon and collect rent, or safely collect rent now.`);
+        this.setDialogText(`${player.name} landed on your property.`);
         this.isEncounterActive = true;
         this.showEncounterSprite(player.pokemon, `${player.name} CHALLENGE!`);
-        this.showRentPreviewCard(spaceId, player, owner, "collector");
         const rentAmounts = this.getRentAmounts(spaceId);
         
         const acceptChallengeBtn = document.createElement("button");
         acceptChallengeBtn.className = "btn-comic btn-roll btn-battle-highlight";
         acceptChallengeBtn.id = "accept-challenge-btn";
-        acceptChallengeBtn.innerText = `DEFEND PROPERTY (Win: Catch chance + full rent)`;
+        acceptChallengeBtn.innerText = "DEFEND";
         this.rollBtn.parentNode.appendChild(acceptChallengeBtn);
 
         // Also provide a fallback: pay full rent without battle
@@ -2240,7 +2190,6 @@ class UIManager {
           if (ac) ac.remove();
           const prf = document.getElementById("pay-rent-fallback-btn");
           if (prf) prf.remove();
-          this.removeRentPreviewCard();
         };
 
         acceptChallengeBtn.addEventListener("click", () => {
@@ -2283,16 +2232,15 @@ class UIManager {
     } else {
       // Human lands on AI's property: Choice
       this.rollBtn.style.display = "none";
-      this.setDialogText(`Landed on ${owner.name}'s property. Pay rent, or battle for 50% rent and a chance to catch a Pokémon.`);
+      this.setDialogText(`Landed on ${owner.name}'s property.`);
       this.isEncounterActive = true;
       this.showEncounterSprite(owner.pokemon, "TRAINER CHALLENGE!");
-      this.showRentPreviewCard(spaceId, player, owner, "payer");
       const rentAmounts = this.getRentAmounts(spaceId);
       
       const challengeBtn = document.createElement("button");
       challengeBtn.className = "btn-comic btn-roll btn-battle-highlight";
       challengeBtn.id = "trainer-battle-btn";
-      challengeBtn.innerText = `CHALLENGE BATTLE (Win: 50% rent + catch / Lose: 150% rent)`;
+      challengeBtn.innerText = "BATTLE";
       this.buyBtn.parentNode.insertBefore(challengeBtn, this.buyBtn);
 
       const payBtn = document.createElement("button");
@@ -2306,7 +2254,6 @@ class UIManager {
         this.hideEncounterSprite();
         challengeBtn.remove();
         payBtn.remove();
-        this.removeRentPreviewCard();
         this.promptPokemonSelection((selectedPoke) => {
           this.initiateTrainerBattle(selectedPoke, owner.pokemon, spaceId, player.id, owner.id);
         });
@@ -2317,7 +2264,6 @@ class UIManager {
         this.hideEncounterSprite();
         challengeBtn.remove();
         payBtn.remove();
-        this.removeRentPreviewCard();
         const rentResult = this.game.payRent(player.id, spaceId, 0);
         this.showMoneyTransfer(rentResult.rent, player.name, owner.name, `Paid ${this.formatMoney(rentResult.rent)} rent to ${owner.name}`, this.gameContainer);
         this.setDialogText(`Paid ${this.formatMoney(rentResult.rent)} rent to ${owner.name}. Cash left: ${this.formatMoney(player.cash)}.`);
