@@ -614,7 +614,7 @@ export class BattleEngine {
         this.activeBattle = null;
       }
       battle.onComplete(winnerIdx === 0);
-    }, 2500);
+    }, 3000);
   }
 
   reset() {
