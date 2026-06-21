@@ -962,7 +962,18 @@ export class GameEngine {
       "Nacli": ["Nacli", "Naclstack", "Garganacl"],
       "Toedscool": ["Toedscool", "Toedscruel"],
       "Capsakid": ["Capsakid", "Scovillain"],
-      "Wattrel": ["Wattrel", "Kilowattrel"]
+      "Wattrel": ["Wattrel", "Kilowattrel"],
+      "Tadbulb": ["Tadbulb", "Bellibolt"],
+      "Rookidee": ["Rookidee", "Corvisquire", "Corviknight"],
+      "Finizen": ["Finizen", "Palafin"],
+      "Frigibax": ["Frigibax", "Arctibax", "Baxcalibur"],
+      "Gimmighoul": ["Gimmighoul", "Gholdengo"],
+      "Pawniard": ["Pawniard", "Bisharp", "Kingambit"],
+      "Mankey": ["Mankey", "Primeape", "Annihilape"],
+      "Paldean Wooper": ["Paldean Wooper", "Clodsire"],
+      "Glimmet": ["Glimmet", "Glimmora"],
+      "Girafarig": ["Girafarig", "Farigiraf"],
+      "Dunsparce": ["Dunsparce", "Dudunsparce"]
     };
   }
 

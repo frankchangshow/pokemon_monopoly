@@ -18,6 +18,7 @@ const AVAILABLE_PNGS = [
   "dondozo", "tatsugiri", "veluza",
   "annihilape", "baxcalibur", "clodsire", "cyclizar", "dudunsparce", "farigiraf", "flamigo", "gholdengo", "glimmora", "kingambit", "maushold", "palafin",
   "oinkologne", "spidops", "dachsbun", "dolliv", "arboliva", "naclstack", "garganacl", "toedscruel", "scovillain", "kilowattrel", "tinkatuff", "armarouge",
+  "tadbulb", "rookidee", "corvisquire", "finizen", "frigibax", "arctibax", "gimmighoul", "pawniard", "bisharp", "mankey", "primeape", "paldean wooper", "glimmet", "girafarig", "dunsparce",
   "sprigatito_tera", "fuecoco_tera", "quaxly_tera", "pawmi_tera",
   "go_sprite", "jail_sprite", "free_parking_sprite", "go_to_jail_sprite",
   "go_full", "jail_full", "free_parking_full", "go_to_jail_full",
@@ -28,17 +29,17 @@ const SAVE_STORAGE_KEY = "pokemonMonopolySaveSlotsV1";
 const SAVE_SLOT_COUNT = 3;
 const MYSTERY_CATCH_SPACE_ID = "__mystery__";
 const MYSTERY_POKEMON_POOL = [
-  { name: "Palafin", title: "HERO SURF SURPRISE!", rarity: "Rare", cost: 260, trigger: "water" },
-  { name: "Baxcalibur", title: "ICE DRAGON RUMBLE!", rarity: "Ultra Rare", cost: 360, trigger: "late" },
-  { name: "Gholdengo", title: "GOLDEN COIN GHOST!", rarity: "Ultra Rare", cost: 380, trigger: "money" },
-  { name: "Kingambit", title: "CHECKMATE CHALLENGE!", rarity: "Rare", cost: 340, trigger: "battle" },
-  { name: "Annihilape", title: "RAGE FROM BEYOND!", rarity: "Rare", cost: 320, trigger: "loss" },
-  { name: "Clodsire", title: "MUDDY PALDEA FRIEND!", rarity: "Rare", cost: 250, trigger: "desert" },
+  { name: "Finizen", title: "HERO SURF SURPRISE!", rarity: "Rare", cost: 260, trigger: "water" },
+  { name: "Frigibax", title: "ICE DRAGON RUMBLE!", rarity: "Ultra Rare", cost: 360, trigger: "late" },
+  { name: "Gimmighoul", title: "GOLDEN COIN GHOST!", rarity: "Ultra Rare", cost: 380, trigger: "money" },
+  { name: "Pawniard", title: "CHECKMATE CHALLENGE!", rarity: "Rare", cost: 340, trigger: "battle" },
+  { name: "Mankey", title: "RAGE FROM BEYOND!", rarity: "Rare", cost: 320, trigger: "loss" },
+  { name: "Paldean Wooper", title: "MUDDY PALDEA FRIEND!", rarity: "Rare", cost: 250, trigger: "desert" },
   { name: "Cyclizar", title: "ROAMING ROADSTER!", rarity: "Rare", cost: 280, trigger: "travel" },
   { name: "Flamigo", title: "FLYING FLOCK FLASH!", rarity: "Rare", cost: 240, trigger: "travel" },
-  { name: "Glimmora", title: "AREA ZERO CRYSTAL!", rarity: "Ultra Rare", cost: 360, trigger: "raid" },
-  { name: "Farigiraf", title: "TWIN-MIND OMEN!", rarity: "Rare", cost: 260, trigger: "academy" },
-  { name: "Dudunsparce", title: "ODD LITTLE LEGEND!", rarity: "Rare", cost: 220, trigger: "weird" },
+  { name: "Glimmet", title: "AREA ZERO CRYSTAL!", rarity: "Ultra Rare", cost: 360, trigger: "raid" },
+  { name: "Girafarig", title: "TWIN-MIND OMEN!", rarity: "Rare", cost: 260, trigger: "academy" },
+  { name: "Dunsparce", title: "ODD LITTLE LEGEND!", rarity: "Rare", cost: 220, trigger: "weird" },
   { name: "Maushold", title: "FAMILY SWARM EVENT!", rarity: "Rare", cost: 240, trigger: "swarm" }
 ];
 const MYSTERY_QUIRKS = [
