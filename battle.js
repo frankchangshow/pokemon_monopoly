@@ -3,8 +3,8 @@
  * Handles move execution, type matchups, CPU AI, logs, Terastallization, and resolution callbacks.
  */
 
-import { PokemonDB, PokemonBattleStats } from './assets.js?v=30';
-import { Sound } from './sound.js?v=30';
+import { PokemonDB, PokemonBattleStats } from './assets.js?v=31';
+import { Sound } from './sound.js?v=31';
 
 const ALL_STATS = ["hp", "attack", "defense", "specialAttack", "specialDefense", "speed"];
 const PLAYER_MIN_MOVE_POWER = 30;
@@ -152,7 +152,7 @@ export class BattleEngine {
   }
 
   // Start a new battle
-  startBattle(playerPokemonName, enemyPokemonName, isTrainerBattle, spaceId, challengerIdx, ownerIdx, playerLevel, enemyLevel, playerPowerUpgrades, enemyPowerUpgrades, onComplete, playerMoves = null, enemyMoves = null) {
+  startBattle(playerPokemonName, enemyPokemonName, isTrainerBattle, spaceId, challengerIdx, ownerIdx, playerLevel, enemyLevel, playerPowerUpgrades, enemyPowerUpgrades, onComplete, playerMoves = null, enemyMoves = null, playerTraining = null, enemyTraining = null) {
     const playerBase = PokemonDB[playerPokemonName];
     const enemyBase = PokemonDB[enemyPokemonName];
 
@@ -161,8 +161,8 @@ export class BattleEngine {
       return;
     }
 
-    const playerStats = this.createBattleStats(playerBase, playerLevel);
-    const enemyStats = this.createBattleStats(enemyBase, enemyLevel);
+    const playerStats = this.createBattleStats(playerBase, playerLevel, playerTraining);
+    const enemyStats = this.createBattleStats(enemyBase, enemyLevel, enemyTraining);
 
     const battleId = ++this.battleSeq;
 
@@ -233,7 +233,7 @@ export class BattleEngine {
     return { attack: 0, defense: 0, specialAttack: 0, specialDefense: 0, speed: 0, accuracy: 0, evasion: 0 };
   }
 
-  createBattleStats(base, level) {
+  createBattleStats(base, level, training = null) {
     const source = PokemonBattleStats[base.name];
     const rawStats = source?.stats || this.inferBaseStats(base);
     const types = source?.types || [base.type || "Normal"];
@@ -241,6 +241,12 @@ export class BattleEngine {
     const calculated = {};
     for (const stat of ALL_STATS) {
       calculated[stat] = this.calculateStat(rawStats[stat], boundedLevel, stat === "hp");
+    }
+    if (training) {
+      calculated.hp += Math.max(0, Number(training.hp) || 0);
+      calculated.attack += Math.max(0, Number(training.attack) || 0);
+      calculated.defense += Math.max(0, Number(training.defense) || 0);
+      calculated.speed += Math.max(0, Number(training.speed) || 0);
     }
     calculated.types = types;
     return calculated;
@@ -474,6 +480,28 @@ export class BattleEngine {
     if (!this.activeBattle || this.activeBattle.enemy.terastallized) return;
     this.activeBattle.enemy.terastallized = true;
     this.log(`✨ Opponent's ${this.activeBattle.enemy.name} Terastallized!`);
+  }
+
+  applyBattleItemToPlayer(item) {
+    if (!this.activeBattle || !item) return { ok: false, message: "No active battle." };
+    const player = this.activeBattle.player;
+    if (item.heal) {
+      const before = player.hp;
+      player.hp = Math.min(player.maxHp, player.hp + item.heal);
+      const healed = player.hp - before;
+      if (healed <= 0) return { ok: false, message: `${player.name} is already at full HP.` };
+      this.log(`🧪 ${player.name} used ${item.name} and restored ${healed} HP!`);
+      return { ok: true, message: `${player.name} restored ${healed} HP!` };
+    }
+
+    const changes = item.stats || (item.stat ? [{ stat: item.stat, amount: item.amount || 1 }] : []);
+    if (!changes.length) return { ok: false, message: `${item.name} cannot be used in battle.` };
+    changes.forEach(change => {
+      player.statStages[change.stat] = Math.max(-6, Math.min(6, (player.statStages[change.stat] || 0) + change.amount));
+    });
+    const label = changes.map(change => `${change.stat} ${change.amount > 0 ? "+" : ""}${change.amount}`).join(", ");
+    this.log(`🧪 ${player.name} used ${item.name}! ${label}`);
+    return { ok: true, message: `${item.name} boosted ${player.name}!` };
   }
 
   executePlayerMove(moveIdx) {

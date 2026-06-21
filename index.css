@@ -1764,6 +1764,67 @@ body {
   justify-content: flex-start;
 }
 
+.inventory-panel {
+  border: 2.5px solid #000;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #FFFBE6, #FFF);
+  box-shadow: 2px 2px 0 #000;
+  padding: 8px;
+}
+
+.inventory-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-title);
+  font-size: 0.92rem;
+  color: var(--text-dark);
+  margin-bottom: 6px;
+}
+
+.inventory-title span {
+  color: #8E44AD;
+}
+
+.inventory-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.inventory-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 2px solid #000;
+  border-radius: 8px;
+  background: #D5DBDB;
+  box-shadow: 1.5px 1.5px 0 #000;
+  padding: 4px 7px;
+  font-family: var(--font-title);
+  font-size: 0.68rem;
+  color: #2C3E50;
+}
+
+.inventory-chip.usable {
+  background: #2ECC71;
+  color: #FFF;
+  cursor: pointer;
+}
+
+.inventory-chip strong {
+  color: var(--accent-yellow);
+  text-shadow: 1px 1px 0 #000;
+}
+
+.inventory-empty,
+.inventory-note {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #5D6D7E;
+  line-height: 1.2;
+}
+
 .collection-item {
   width: 50px;
   height: 50px;
@@ -2319,6 +2380,10 @@ body {
 .battle-stat-stage.negative {
   background: #3498DB;
   color: #FFF;
+}
+
+.btn-item {
+  background: #2ECC71;
 }
 
 .battle-status-badge {

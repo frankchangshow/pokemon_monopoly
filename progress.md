@@ -59,3 +59,6 @@ Updates:
 - Rebalanced battle feel after official stats made the game too punishing: the human/player side now always gets the opening move, weak player attacks get a minimum battle power, and AI damage is softened.
 - Updated battle log rendering to show recent attack damage and secondary effects together so damage is not hidden by burn/poison/stat messages.
 - Verified with direct engine checks and browser smoke tests: Fuecoco Lv.4 now opens against faster Rotom, Ember deals visible damage from 19 HP to 11 HP, and the log shows both the damage and burn effect.
+- Added lightweight item mechanics: persistent inventory, training items, battle items, Tera Shards, item drops after battles, Free Parking item rewards, and saved per-Pokémon training stats.
+- Changed Terastallize into a charged resource: players start with 1 Tera charge, spending it disables Tera until recharged by Free Parking, passing GO chance, or Tera Shard.
+- Verified item/Tera behavior in browser: inventory renders in the collection panel, X Attack consumes once per battle and applies +1 Attack, Protein persists +1 Attack training, Free Parking recharges Tera and drops an item, and item/training/Tera state survives serialize/load.

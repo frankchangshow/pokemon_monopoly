@@ -3,10 +3,10 @@
  * Integrates assets, sounds, Monopoly engine, and Battle engine to render a dynamic comic-book game.
  */
 
-import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=30';
-import { Sound } from './sound.js?v=30';
-import { GameEngine } from './game.js?v=30';
-import { Battle } from './battle.js?v=30';
+import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=31';
+import { Sound } from './sound.js?v=31';
+import { GameEngine, BattleItems } from './game.js?v=31';
+import { Battle } from './battle.js?v=31';
 
 window.Battle = Battle;
 
@@ -133,6 +133,7 @@ class UIManager {
     this.battleMove1 = document.getElementById("move-btn-1");
     this.battleMove2 = document.getElementById("move-btn-2");
     this.battleMove3 = document.getElementById("move-btn-3");
+    this.battleItemBtn = document.getElementById("battle-item-btn");
     this.battleTeraBtn = document.getElementById("terastallize-btn");
     this.battleLogText = document.getElementById("battle-log-text");
     this.battleStatsToggleBtn = document.getElementById("battle-stats-toggle-btn");
@@ -466,8 +467,15 @@ class UIManager {
     this.battleMove1.addEventListener("click", () => this.handlePlayerBattleMove(1));
     if (this.battleMove2) this.battleMove2.addEventListener("click", () => this.handlePlayerBattleMove(2));
     if (this.battleMove3) this.battleMove3.addEventListener("click", () => this.handlePlayerBattleMove(3));
+    if (this.battleItemBtn) this.battleItemBtn.addEventListener("click", () => this.showBattleItemMenu());
     
     this.battleTeraBtn.addEventListener("click", () => {
+      const player = this.getActiveBattlePlayer();
+      if (!player || !this.game.spendTeraCharge(player)) {
+        this.setBattleLog("Your Tera Orb is empty. Recharge at Free Parking, passing GO, or with a Tera Shard.");
+        this.updateBattleHUDs();
+        return;
+      }
       Battle.terastallizePlayer();
       this.playerPokeTera.style.display = "inline-block";
       this.battleTeraBtn.disabled = true;
@@ -1902,7 +1910,13 @@ class UIManager {
       return;
     }
     if (space.type === "parking") {
-      this.setDialogText("Rest stop! Free parking.");
+      const recharged = this.game.rechargeTera(player, "Tera Orb recharged at Free Parking");
+      const itemId = this.game.rollItemDrop(Math.random() < 0.25 ? "rare" : "battle");
+      this.game.addItem(player, itemId, 1);
+      const item = BattleItems[itemId];
+      this.setDialogText(`Free Parking rest stop! ${recharged ? "Tera recharged. " : ""}Found ${item.name}.`);
+      if (!player.isAI) this.showCenterActionToast(`Free Parking: ${item.name}!`, "money", this.gameContainer);
+      this.updateUI();
       if (player.isAI) {
         setTimeout(() => this.executeAITurnEnd(), 1500);
       } else {
@@ -2664,12 +2678,15 @@ class UIManager {
     this.enemyPokeTera.style.display = encounter.kind === "Tera" ? "inline-block" : "none";
 
     const player = this.game.players[0];
+    this.game.resetBattleItemUse(player);
     const pLevel = this.game.getPokemonLevel(player, playerPoke);
     const eLevel = Math.max(2, Math.floor(encounter.cost / 70) + (encounter.kind === "Titan" ? 2 : 0));
     const pMoves = this.getBattleMovesForPlayer(player, playerPoke);
+    const pTraining = this.game.getPokemonTraining(player, playerPoke);
     Battle.startBattle(playerPoke, encounter.name, false, null, 0, null, pLevel, eLevel, player.powerUpgrades || 0, 0, (won) => {
       Sound.stopBattleBGM();
       this.battleOverlay.style.display = "none";
+      this.awardBattleItemDrop(player, won, encounter.kind === "Titan" || encounter.rarity === "Ultra Rare" ? "rare" : "battle");
       if (!won) {
         this.setDialogText(`${encounter.name} escaped after the battle. The board goes quiet again.`);
         this.game.log(`Mystery encounter ${encounter.name} escaped after defeating ${playerPoke}.`);
@@ -2689,7 +2706,7 @@ class UIManager {
         }
         continuation();
       });
-    }, pMoves);
+    }, pMoves, null, pTraining);
 
     this.updateBattleHUDs();
     this.setBattleLog(`${encounter.kind} mystery encounter! ${encounter.name} wants to battle!`);
@@ -2749,10 +2766,13 @@ class UIManager {
     const eLevel = Math.max(1, Math.floor(this.game.spaces[spaceId].cost / 60));
     const pPower = this.game.players[0].powerUpgrades || 0;
     const pMoves = this.getBattleMovesForPlayer(this.game.players[0], playerPoke);
+    const pTraining = this.game.getPokemonTraining(this.game.players[0], playerPoke);
+    this.game.resetBattleItemUse(this.game.players[0]);
 
     Battle.startBattle(playerPoke, enemyPoke, false, spaceId, 0, null, pLevel, eLevel, pPower, 0, (won) => {
       Sound.stopBattleBGM();
       this.battleOverlay.style.display = "none";
+      this.awardBattleItemDrop(this.game.players[0], won, "battle");
       if (won) {
         // human wins the battle: transition to the catch mini-game!
         this.initiateCatchMiniGame(spaceId, (success) => {
@@ -2784,7 +2804,7 @@ class UIManager {
         const space = this.game.spaces[spaceId];
         this.showFullPriceBuyAfterFailedWildClaim(spaceId, `Defeat! Wild ${enemyPoke} fled. You can still buy ${space.name} at full price.`);
       }
-    }, pMoves);
+    }, pMoves, null, pTraining);
 
     this.updateBattleHUDs();
     this.setBattleLog("A wild Pokémon appeared! Start the battle!");
@@ -3527,10 +3547,14 @@ class UIManager {
     const ePower = this.game.players[enemySideIdx].powerUpgrades || 0;
     const pMoves = this.getBattleMovesForPlayer(this.game.players[playerSideIdx], playerPoke);
     const eMoves = this.getBattleMovesForPlayer(this.game.players[enemySideIdx], enemyPoke);
+    const pTraining = this.game.getPokemonTraining(this.game.players[playerSideIdx], playerPoke);
+    const eTraining = this.game.getPokemonTraining(this.game.players[enemySideIdx], enemyPoke);
+    this.game.resetBattleItemUse(this.game.players[playerSideIdx]);
 
     Battle.startBattle(playerPoke, enemyPoke, true, spaceId, challengerIdx, ownerIdx, pLevel, eLevel, pPower, ePower, (won) => {
       Sound.stopBattleBGM();
       this.battleOverlay.style.display = "none";
+      this.awardBattleItemDrop(this.game.players[playerSideIdx], won, won ? "battle" : "loss");
       
       const activePlayer = this.game.getCurrentPlayer();
       const space = this.game.spaces[spaceId];
@@ -3600,7 +3624,7 @@ class UIManager {
           });
         }
       }
-    }, pMoves, eMoves);
+    }, pMoves, eMoves, pTraining, eTraining);
 
     this.updateBattleHUDs();
     this.setBattleLog(`Trainer Battle initiated! Defender vs Challenger.`);
@@ -3612,6 +3636,7 @@ class UIManager {
     this.battleMove1.disabled = false;
     if (this.battleMove2) this.battleMove2.disabled = false;
     if (this.battleMove3) this.battleMove3.disabled = false;
+    if (this.battleItemBtn) this.battleItemBtn.disabled = false;
     this.playerBattleSprite.classList.remove("strike-player", "strike-enemy", "shake", "tera-active");
     this.enemyBattleSprite.classList.remove("strike-player", "strike-enemy", "shake", "tera-active");
     this.playerBattleSprite.className = "battle-sprite-container";
@@ -3717,6 +3742,18 @@ class UIManager {
     this.battleMove1.disabled = battle.turn !== 0;
     if (this.battleMove2) this.battleMove2.disabled = battle.turn !== 0 || !battle.player.moves[2];
     if (this.battleMove3) this.battleMove3.disabled = battle.turn !== 0 || !battle.player.moves[3];
+    const battlePlayer = this.getActiveBattlePlayer();
+    if (this.battleItemBtn) {
+      const hasBattleItems = battlePlayer && Object.entries(battlePlayer.inventory || {}).some(([itemId, count]) => BattleItems[itemId]?.kind === "battle" && count > 0);
+      this.battleItemBtn.style.display = "flex";
+      this.battleItemBtn.disabled = battle.turn !== 0 || this.combatAnimating || !hasBattleItems || !!battlePlayer?.battleItemUsed;
+      this.battleItemBtn.innerHTML = `🧪 ITEM ${battlePlayer?.battleItemUsed ? "(USED)" : ""}`;
+    }
+    if (this.battleTeraBtn && battlePlayer) {
+      const teraCharge = `${battlePlayer.teraCharge || 0}/${battlePlayer.maxTeraCharge || 1}`;
+      this.battleTeraBtn.innerHTML = `🌟 TERASTALLIZE (${teraCharge})`;
+      this.battleTeraBtn.disabled = battle.turn !== 0 || battle.player.terastallized || (battlePlayer.teraCharge || 0) <= 0;
+    }
 
     if (this.battleStatsOverlay && getComputedStyle(this.battleStatsOverlay).display !== "none") {
       this.toggleBattleStatsOverlay(true);
@@ -3790,6 +3827,72 @@ class UIManager {
     if (!battle.player.moves[moveIdx]) return;
 
     Battle.executePlayerMove(moveIdx);
+  }
+
+  getActiveBattlePlayer() {
+    const battle = Battle.activeBattle;
+    if (!battle) return this.game.players[0];
+    const idx = battle.challengerIdx === 0 ? 0 : (battle.ownerIdx === 0 ? 0 : battle.challengerIdx);
+    return this.game.players[idx] || this.game.players[0];
+  }
+
+  showBattleItemMenu() {
+    const player = this.getActiveBattlePlayer();
+    const battle = Battle.activeBattle;
+    if (!player || !battle || battle.turn !== 0 || player.battleItemUsed) {
+      this.setBattleLog(player?.battleItemUsed ? "You already used an item this battle." : "You cannot use an item right now.");
+      return;
+    }
+    const battleItems = Object.entries(player.inventory || {})
+      .filter(([itemId, count]) => BattleItems[itemId]?.kind === "battle" && count > 0)
+      .map(([itemId, count]) => ({ ...BattleItems[itemId], count }));
+    if (!battleItems.length) {
+      this.setBattleLog("No battle items available.");
+      return;
+    }
+    const label = battleItems.map((item, idx) => `${idx + 1}. ${item.name} x${item.count} - ${item.text}`).join("\n");
+    const choice = prompt(`Choose a battle item:\n${label}\n\nEnter item number:`);
+    const idx = Number(choice) - 1;
+    const item = battleItems[idx];
+    if (!item) return;
+    this.useBattleItem(item.id);
+  }
+
+  useBattleItem(itemId) {
+    const player = this.getActiveBattlePlayer();
+    const item = BattleItems[itemId];
+    if (!player || !item || item.kind !== "battle") return;
+    if (player.battleItemUsed) {
+      this.setBattleLog("You already used an item this battle.");
+      return;
+    }
+    if (!this.game.consumeItem(player, itemId, 1)) {
+      this.setBattleLog(`No ${item.name} left.`);
+      return;
+    }
+    const result = Battle.applyBattleItemToPlayer(item);
+    if (!result.ok) {
+      player.inventory[itemId] = (player.inventory[itemId] || 0) + 1;
+      this.setBattleLog(result.message);
+      return;
+    }
+    player.battleItemUsed = true;
+    this.showCenterActionToast(result.message, "buff", this.battleOverlay);
+    this.updateBattleHUDs();
+    this.setBattleLog(result.message);
+  }
+
+  awardBattleItemDrop(player, won, tier = "battle") {
+    if (!player || player.isAI) return null;
+    const chance = won ? 0.7 : 0.3;
+    if (tier !== "rare" && Math.random() > chance) return null;
+    const itemId = this.game.rollItemDrop(tier);
+    this.game.addItem(player, itemId, 1);
+    const item = BattleItems[itemId];
+    this.showCenterActionToast(`Found ${item.name}!`, "money", this.gameContainer);
+    this.setDialogText(`${won ? "Battle reward" : "Consolation drop"}: found ${item.name}.`);
+    this.updateUI();
+    return itemId;
   }
 
 
@@ -3898,6 +4001,7 @@ class UIManager {
     if (!container) return;
 
     if (!player.collection) player.collection = [];
+    this.game.normalizePlayerItems(player);
     this.game.normalizeCollectionMeta(player);
     if (!player.lockedCollectionPokemon) player.lockedCollectionPokemon = [];
     player.lockedCollectionPokemon = player.lockedCollectionPokemon.filter(name => player.collection.includes(name));
@@ -3908,7 +4012,7 @@ class UIManager {
       return idx < player.collection.length && !this.isCollectionPokemonLocked(player, player.collection[idx]);
     });
 
-    let html = "";
+    let html = this.renderInventoryPanel(player);
     if (player.collection.length === 0) {
       html += `<div style="font-size:0.82rem; color:#7F8C8D; text-align:center; padding: 10px 0;">No Pokémon caught yet. Win wild battles to catch them!</div>`;
     } else {
@@ -4019,6 +4123,59 @@ class UIManager {
       btnEvolve.addEventListener("click", () => {
         this.executeTrade("evolve");
       });
+    }
+
+    container.querySelectorAll(".inventory-chip.usable").forEach(button => {
+      button.addEventListener("click", () => this.useInventoryItem(button.getAttribute("data-item-id")));
+    });
+  }
+
+  renderInventoryPanel(player) {
+    const entries = Object.entries(player.inventory || {}).filter(([itemId, count]) => BattleItems[itemId] && count > 0);
+    const teraText = `${player.teraCharge || 0}/${player.maxTeraCharge || 1}`;
+    if (!entries.length) {
+      return `<div class="inventory-panel"><div class="inventory-title">ITEMS <span>TERA ${teraText}</span></div><div class="inventory-empty">Win battles or visit Free Parking to find items.</div></div>`;
+    }
+    const itemButtons = entries.map(([itemId, count]) => {
+      const item = BattleItems[itemId];
+      const usable = item.kind === "training" || item.rechargeTera;
+      return `
+        <button class="inventory-chip ${usable ? "usable" : ""}" ${usable ? `data-item-id="${itemId}"` : "disabled"} title="${this.escapeHTML(item.text)}">
+          <span>${this.escapeHTML(item.name)}</span><strong>x${count}</strong>
+        </button>
+      `;
+    }).join("");
+    return `
+      <div class="inventory-panel">
+        <div class="inventory-title">ITEMS <span>TERA ${teraText}</span></div>
+        <div class="inventory-list">${itemButtons}</div>
+        <div class="inventory-note">Training items apply to your current board partner. Battle items are used during fights.</div>
+      </div>
+    `;
+  }
+
+  useInventoryItem(itemId) {
+    const player = this.game.players[0];
+    const item = BattleItems[itemId];
+    if (!player || !item) return;
+    if (item.rechargeTera) {
+      if ((player.teraCharge || 0) >= (player.maxTeraCharge || 1)) {
+        this.setDialogText("Your Tera Orb is already charged.");
+        return;
+      }
+      if (this.game.consumeItem(player, itemId, 1)) {
+        this.game.rechargeTera(player, "Tera Orb recharged with a Tera Shard");
+        this.setDialogText("Used Tera Shard. Your Tera Orb is charged.");
+        this.showCenterActionToast("Tera Orb charged!", "buff", this.gameContainer);
+        this.updateUI();
+      }
+      return;
+    }
+    if (item.kind === "training") {
+      const result = this.game.applyTrainingItem(player, player.pokemon, itemId);
+      this.setDialogText(result.message);
+      if (result.ok) this.showCenterActionToast(result.message, "buff", this.gameContainer);
+      this.updateUI();
     }
   }
 
@@ -4530,7 +4687,7 @@ class UIManager {
     const defenderSprite = defenderSide === "player" ? this.playerBattleSprite : this.enemyBattleSprite;
 
     // Disable move buttons during animation
-    [this.battleMove0, this.battleMove1, this.battleMove2, this.battleMove3].forEach(button => {
+    [this.battleMove0, this.battleMove1, this.battleMove2, this.battleMove3, this.battleItemBtn].forEach(button => {
       if (button) button.disabled = true;
     });
 
