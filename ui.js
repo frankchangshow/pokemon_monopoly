@@ -20,6 +20,13 @@ const AVAILABLE_PNGS = [
   "oinkologne", "spidops", "dachsbun", "dolliv", "arboliva", "naclstack", "garganacl", "toedscruel", "scovillain", "kilowattrel", "tinkatuff", "armarouge",
   "tadbulb", "rookidee", "corvisquire", "finizen", "frigibax", "arctibax", "gimmighoul", "pawniard", "bisharp", "mankey", "primeape", "paldean wooper", "glimmet", "girafarig", "dunsparce",
   "sprigatito_tera", "fuecoco_tera", "quaxly_tera", "pawmi_tera",
+  "floragato_tera", "meowscarada_tera", "crocalor_tera", "skeledirge_tera", "quaxwell_tera", "quaquaval_tera", "pawmo_tera", "pawmot_tera",
+  "tinkaton_tera", "ceruledge_tera", "koraidon_tera", "miraidon_tera", "lechonk_tera", "charcadet_tera", "tinkatink_tera", "fidough_tera", "smoliv_tera",
+  "tarountula_tera", "corviknight_tera", "tandemaus_tera", "rotom_tera", "nacli_tera", "orthworm_tera", "toedscool_tera", "capsakid_tera", "grafaiai_tera", "shroodle_tera", "wattrel_tera", "bellibolt_tera",
+  "dondozo_tera", "tatsugiri_tera", "veluza_tera",
+  "annihilape_tera", "baxcalibur_tera", "clodsire_tera", "cyclizar_tera", "dudunsparce_tera", "farigiraf_tera", "flamigo_tera", "gholdengo_tera", "glimmora_tera", "kingambit_tera", "maushold_tera", "palafin_tera",
+  "oinkologne_tera", "spidops_tera", "dachsbun_tera", "dolliv_tera", "arboliva_tera", "naclstack_tera", "garganacl_tera", "toedscruel_tera", "scovillain_tera", "kilowattrel_tera", "tinkatuff_tera", "armarouge_tera",
+  "tadbulb_tera", "rookidee_tera", "corvisquire_tera", "finizen_tera", "frigibax_tera", "arctibax_tera", "gimmighoul_tera", "pawniard_tera", "bisharp_tera", "mankey_tera", "primeape_tera", "paldean wooper_tera", "glimmet_tera", "girafarig_tera", "dunsparce_tera",
   "go_sprite", "jail_sprite", "free_parking_sprite", "go_to_jail_sprite",
   "go_full", "jail_full", "free_parking_full", "go_to_jail_full",
   "tera_raid_chest", "academy_class", "poke_mart_tax", "league_assessment_tax"
