@@ -1036,10 +1036,10 @@ class UIManager {
     const safeLabel = mode === "collector" ? "Collect full rent" : "Pay now";
     const challengeWin = mode === "collector"
       ? `Win defense: catch Pokémon + collect ${this.formatMoney(fullRent)}`
-      : `Win battle: pay ${this.formatMoney(winRent)} if catch fails`;
+      : `Win battle: 50% rent (${this.formatMoney(winRent)}) + catch chance`;
     const challengeLose = mode === "collector"
       ? "Lose defense: collect $0, keep property"
-      : `Lose battle: pay ${this.formatMoney(lossRent)}`;
+      : `Lose battle: 150% rent (${this.formatMoney(lossRent)})`;
 
     const card = document.createElement("div");
     card.id = "rent-preview-card";
@@ -2208,7 +2208,7 @@ class UIManager {
         const acceptChallengeBtn = document.createElement("button");
         acceptChallengeBtn.className = "btn-comic btn-roll btn-battle-highlight";
         acceptChallengeBtn.id = "accept-challenge-btn";
-        acceptChallengeBtn.innerText = `DEFEND PROPERTY (Win: Catch + ${this.formatMoney(rentAmounts.fullRent)})`;
+        acceptChallengeBtn.innerText = `DEFEND PROPERTY (Win: Catch chance + full rent)`;
         this.rollBtn.parentNode.appendChild(acceptChallengeBtn);
 
         // Also provide a fallback: pay full rent without battle
@@ -2250,9 +2250,9 @@ class UIManager {
         // AI lands on AI: Quick simulate
         const challengerWins = Math.random() < 0.5;
         if (challengerWins) {
-          this.game.degradeProperty(spaceId);
-          this.game.transferPropertyOwnership(spaceId, player.id);
-          this.resolveDuesCheck(player.id, null, () => {
+          const rentResult = this.game.payRent(player.id, spaceId, 50);
+          this.game.log(`${player.name} won trainer battle against ${owner.name}! Paying 50% rent (${this.formatMoney(rentResult.rent)}).`);
+          this.resolveDuesCheck(player.id, ownerIdx, () => {
             this.updateUI();
             this.executeAITurnEnd();
           });
@@ -2268,7 +2268,7 @@ class UIManager {
     } else {
       // Human lands on AI's property: Choice
       this.rollBtn.style.display = "none";
-      this.setDialogText(`Landed on ${owner.name}'s property. Pay rent or Challenge Trainer to a battle?`);
+      this.setDialogText(`Landed on ${owner.name}'s property. Pay rent, or battle for 50% rent and a chance to catch a Pokémon.`);
       this.isEncounterActive = true;
       this.showEncounterSprite(owner.pokemon, "TRAINER CHALLENGE!");
       this.showRentPreviewCard(spaceId, player, owner, "payer");
@@ -2277,7 +2277,7 @@ class UIManager {
       const challengeBtn = document.createElement("button");
       challengeBtn.className = "btn-comic btn-roll btn-battle-highlight";
       challengeBtn.id = "trainer-battle-btn";
-      challengeBtn.innerText = `CHALLENGE BATTLE (Win: ${this.formatMoney(rentAmounts.winRent)} / Lose: ${this.formatMoney(rentAmounts.lossRent)})`;
+      challengeBtn.innerText = `CHALLENGE BATTLE (Win: 50% rent + catch / Lose: 150% rent)`;
       this.buyBtn.parentNode.insertBefore(challengeBtn, this.buyBtn);
 
       const payBtn = document.createElement("button");
@@ -3693,21 +3693,26 @@ class UIManager {
 
       if (isHumanChallenger) {
         if (won) {
-          this.game.degradeProperty(spaceId);
           this.initiateCatchMiniGame(spaceId, (success) => {
+            const rentResult = this.game.payRent(0, spaceId, 50);
+            this.showMoneyTransfer(rentResult.rent, this.game.players[0].name, owner.name, `Battle discount rent: ${this.formatMoney(rentResult.rent)}`, this.gameContainer);
             if (success) {
-              this.game.transferPropertyOwnership(spaceId, 0);
+              const player0 = this.game.players[0];
+              if (!player0.collection) player0.collection = [];
+              this.game.normalizeCollectionMeta(player0);
+              if (!player0.collection.includes(enemyPoke)) {
+                player0.collection.push(enemyPoke);
+                player0.collectionMeta.push(null);
+              }
               this.awardEvolutionPoints(this.game.players[0], playerPoke, 2, "caught a Pokémon", this.gameContainer);
-              const savedRent = this.getRentAmounts(spaceId).fullRent;
-              this.showCenterActionToast(`Claimed property and saved ${this.formatMoney(savedRent)} rent!`, "money", this.gameContainer);
-              this.setDialogText(`GOTCHA! You caught ${enemyPoke}, paid $0 rent, and claimed ownership of ${space.name} for FREE!`);
+              this.renderCollection();
+              this.showCenterActionToast(`Caught ${enemyPoke} and paid 50% rent!`, "money", this.gameContainer);
+              this.setDialogText(`GOTCHA! You caught ${enemyPoke} for your collection and paid discounted rent ${this.formatMoney(rentResult.rent)} to ${owner.name}. ${owner.name} keeps ${space.name}.`);
               this.updateUI();
-              this.resolveDuesCheck(0, null, () => {
+              this.resolveDuesCheck(0, ownerIdx, () => {
                 this.endBtn.style.display = "inline-block";
               });
             } else {
-              const rentResult = this.game.payRent(0, spaceId, 50);
-              this.showMoneyTransfer(rentResult.rent, this.game.players[0].name, owner.name, `Battle discount rent: ${this.formatMoney(rentResult.rent)}`, this.gameContainer);
               this.setDialogText(`The Pokémon broke free and fled! You paid discount rent ${this.formatMoney(rentResult.rent)} to ${owner.name}.`);
               this.resolveDuesCheck(0, ownerIdx, () => {
                 this.updateUI();
