@@ -1812,6 +1812,18 @@ class UIManager {
     this.victoryConfetti.innerHTML = pieces;
   }
 
+  createConfettiHTML(count = 80) {
+    const colors = ["#FFDE00", "#E74C3C", "#3B4CCA", "#2ECC71", "#FFFFFF", "#FF8C00", "#9B59B6"];
+    return Array.from({ length: count }, (_, idx) => {
+      const left = (idx * 41) % 100;
+      const color = colors[idx % colors.length];
+      const duration = 2.4 + (idx % 8) * 0.24;
+      const delay = -((idx % 11) * 0.15);
+      const rotate = `${(idx * 31) % 180}deg`;
+      return `<span class="confetti-piece" style="left:${left}%; --confetti-color:${color}; --fall-duration:${duration}s; --fall-delay:${delay}s; --confetti-rotate:${rotate};"></span>`;
+    }).join("");
+  }
+
   uploadLogsToServer() {
     if (this.logUploadTimeout) {
       clearTimeout(this.logUploadTimeout);
@@ -4718,9 +4730,61 @@ class UIManager {
     this.game.recalculatePlayerStats(0);
     this.game.log(`${currentName} evolved into ${nextName} using Evolution Points!`);
     this.setDialogText(`${currentName} evolved into ${nextName}!`);
-    this.showCenterActionToast(`${nextName} evolved!`, "buff", this.gameContainer);
     this.renderCollection();
     this.updateUI();
+    this.showEvolutionCelebration(currentName, nextName);
+  }
+
+  showEvolutionCelebration(oldName, newName) {
+    const overlay = this.ensureEvolutionCelebrationOverlay();
+    Sound.playVictory();
+    overlay.innerHTML = `
+      <div class="evolution-celebration-confetti">${this.createConfettiHTML(110)}</div>
+      <div class="evolution-energy-ring ring-one"></div>
+      <div class="evolution-energy-ring ring-two"></div>
+      <div class="evolution-burst-card">
+        <div class="evolution-burst-kicker">Evolution Complete</div>
+        <div class="evolution-burst-title">WHAT?!</div>
+        <div class="evolution-burst-subtitle">${this.escapeHTML(oldName)} is evolving!</div>
+        <div class="evolution-stage">
+          <div class="evolution-mon old-form">
+            <div class="evolution-sprite">${this.getPokemonSpriteMarkup(oldName)}</div>
+            <span>${this.escapeHTML(oldName)}</span>
+          </div>
+          <div class="evolution-light-column">
+            <span class="evolution-arrow-flash">→</span>
+            <span class="evolution-spark spark-one">✦</span>
+            <span class="evolution-spark spark-two">✧</span>
+            <span class="evolution-spark spark-three">✦</span>
+          </div>
+          <div class="evolution-mon new-form">
+            <div class="evolution-sprite">${this.getPokemonSpriteMarkup(newName)}</div>
+            <span>${this.escapeHTML(newName)}</span>
+          </div>
+        </div>
+        <div class="evolution-result">Congratulations! Your ${this.escapeHTML(oldName)} evolved into ${this.escapeHTML(newName)}!</div>
+        <button class="btn-comic evolution-continue-btn" type="button">CONTINUE</button>
+      </div>
+    `;
+
+    const close = () => {
+      overlay.style.display = "none";
+      this.showCenterActionToast(`${newName} evolved!`, "buff", this.gameContainer);
+    };
+
+    overlay.querySelector(".evolution-continue-btn").addEventListener("click", close, { once: true });
+    overlay.style.display = "flex";
+  }
+
+  ensureEvolutionCelebrationOverlay() {
+    let overlay = document.getElementById("evolution-celebration-overlay");
+    if (overlay) return overlay;
+    overlay = document.createElement("div");
+    overlay.id = "evolution-celebration-overlay";
+    overlay.className = "evolution-celebration-overlay";
+    overlay.style.display = "none";
+    document.body.appendChild(overlay);
+    return overlay;
   }
 
   confirmEvolutionTrade(costIndices, target) {
