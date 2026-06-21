@@ -3,10 +3,10 @@
  * Integrates assets, sounds, Monopoly engine, and Battle engine to render a dynamic comic-book game.
  */
 
-import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=31';
-import { Sound } from './sound.js?v=31';
-import { GameEngine, BattleItems } from './game.js?v=31';
-import { Battle } from './battle.js?v=31';
+import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=32';
+import { Sound } from './sound.js?v=32';
+import { GameEngine, BattleItems } from './game.js?v=32';
+import { Battle } from './battle.js?v=32';
 
 window.Battle = Battle;
 
@@ -77,6 +77,9 @@ class UIManager {
     this.setupScreen = document.getElementById("setup-screen");
     this.gameContainer = document.getElementById("game-container");
     this.boardGrid = document.getElementById("board-grid");
+    this.logsSection = document.getElementById("logs-section");
+    this.logsToggleBtn = document.getElementById("logs-toggle-btn");
+    this.logsToggleLabel = document.getElementById("logs-toggle-label");
     this.logsPanel = document.getElementById("logs-panel-box");
     this.trainerList = document.getElementById("trainer-list-box");
     this.statusDialog = document.getElementById("status-dialog");
@@ -483,6 +486,10 @@ class UIManager {
     });
     if (this.battleStatsToggleBtn) {
       this.battleStatsToggleBtn.addEventListener("click", () => this.toggleBattleStatsOverlay(true));
+    }
+
+    if (this.logsToggleBtn) {
+      this.logsToggleBtn.addEventListener("click", () => this.toggleAdventureLog());
     }
     if (this.battleStatsCloseBtn) {
       this.battleStatsCloseBtn.addEventListener("click", () => this.toggleBattleStatsOverlay(false));
@@ -1505,8 +1512,12 @@ class UIManager {
     });
 
     // Update Sidebar logs
-    this.logsPanel.innerHTML = this.game.logs.map(log => `<div class="log-entry">${log}</div>`).join("");
-    this.logsPanel.scrollTop = this.logsPanel.scrollHeight;
+    if (this.logsPanel) {
+      this.logsPanel.innerHTML = this.game.logs.map(log => `<div class="log-entry">${log}</div>`).join("");
+      if (!this.logsSection || !this.logsSection.classList.contains("collapsed")) {
+        this.logsPanel.scrollTop = this.logsPanel.scrollHeight;
+      }
+    }
 
     // Update Sidebar Trainer Cards
     this.trainerList.innerHTML = this.game.players.map(p => {
@@ -1593,6 +1604,15 @@ class UIManager {
     this.game.markFinished(winner.id);
     this.victoryShown = true;
     this.showVictoryScreen(winner);
+  }
+
+  toggleAdventureLog(forceOpen = null) {
+    if (!this.logsSection) return;
+    const shouldOpen = forceOpen === null ? this.logsSection.classList.contains("collapsed") : forceOpen;
+    this.logsSection.classList.toggle("collapsed", !shouldOpen);
+    if (this.logsToggleBtn) this.logsToggleBtn.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+    if (this.logsToggleLabel) this.logsToggleLabel.innerText = shouldOpen ? "HIDE" : "SHOW";
+    if (shouldOpen && this.logsPanel) this.logsPanel.scrollTop = this.logsPanel.scrollHeight;
   }
 
   showVictoryScreen(winner) {

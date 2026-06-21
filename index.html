@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pokémon Monopoly: Paldea Edition</title>
-  <link rel="stylesheet" href="index.css?v=31">
+  <link rel="stylesheet" href="index.css?v=32">
 </head>
 <body>
 
@@ -154,9 +154,14 @@
         <!-- Pokémon collection list and Trade options will be injected here -->
       </div>
 
-      <h2 style="font-family: var(--font-title); font-size: 1.4rem; color: #BDC3C7; text-shadow: 1px 1px 0px #000; letter-spacing: 1px; margin-top: 15px;">ADVENTURE LOG</h2>
-      <div class="logs-panel" id="logs-panel-box">
-        <!-- Logs dynamically injected here -->
+      <div class="logs-section collapsed" id="logs-section">
+        <button class="logs-toggle" id="logs-toggle-btn" type="button" aria-expanded="false">
+          <span>ADVENTURE LOG</span>
+          <strong id="logs-toggle-label">SHOW</strong>
+        </button>
+        <div class="logs-panel" id="logs-panel-box">
+          <!-- Logs dynamically injected here -->
+        </div>
       </div>
     </div>
   </div>
@@ -373,6 +378,6 @@
   </div>
 
   <!-- Core Javascript code -->
-  <script type="module" src="ui.js?v=31"></script>
+  <script type="module" src="ui.js?v=32"></script>
 </body>
 </html>

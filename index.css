@@ -2134,13 +2134,53 @@ body {
 }
 
 /* Live Logs Box */
+.logs-section {
+  margin-top: 15px;
+}
+
+.logs-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 3px solid #000;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2C3E50, #17202A);
+  color: #BDC3C7;
+  box-shadow: 3px 3px 0 #000;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-family: var(--font-title);
+  letter-spacing: 1px;
+}
+
+.logs-toggle span {
+  font-size: 1.08rem;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.logs-toggle strong {
+  background: var(--accent-yellow);
+  color: #000;
+  border: 2px solid #000;
+  border-radius: 999px;
+  padding: 3px 9px;
+  box-shadow: 1px 1px 0 #000;
+  font-size: 0.78rem;
+}
+
+.logs-toggle:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 #000;
+}
+
 .logs-panel {
   background-color: #000;
   color: #2ECC71;
   border: 3px solid #333;
   border-radius: 10px;
   padding: 10px;
-  flex-grow: 1;
   font-family: monospace;
   font-size: 0.75rem;
   overflow-y: auto;
@@ -2148,6 +2188,11 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin-top: 8px;
+}
+
+.logs-section.collapsed .logs-panel {
+  display: none;
 }
 
 .log-entry {
