@@ -1643,7 +1643,8 @@ body {
   position: absolute;
   left: 50%;
   top: 42%;
-  transform: translate(-50%, -50%);
+  --toast-stack-offset: 0px;
+  transform: translate(-50%, calc(-50% + var(--toast-stack-offset)));
   z-index: 120;
   min-width: 220px;
   max-width: 80%;
@@ -1750,10 +1751,10 @@ body {
 }
 
 @keyframes centerToastPop {
-  0% { opacity: 0; transform: translate(-50%, -35%) scale(0.75) rotate(-2deg); }
-  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.08) rotate(1deg); }
-  75% { opacity: 1; transform: translate(-50%, -58%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -75%) scale(0.92); }
+  0% { opacity: 0; transform: translate(-50%, calc(-35% + var(--toast-stack-offset))) scale(0.75) rotate(-2deg); }
+  15% { opacity: 1; transform: translate(-50%, calc(-50% + var(--toast-stack-offset))) scale(1.08) rotate(1deg); }
+  75% { opacity: 1; transform: translate(-50%, calc(-58% + var(--toast-stack-offset))) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, calc(-95% + var(--toast-stack-offset))) scale(0.92); }
 }
 
 /* Action box flex ordering */

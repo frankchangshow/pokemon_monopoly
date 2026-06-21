@@ -996,9 +996,12 @@ class UIManager {
 
   showCenterActionToast(text, variant = "info", host = null, durationMs = null) {
     const target = host || document.body;
+    const activeToasts = target.querySelectorAll(":scope > .center-action-toast").length;
+    const stackIndex = Math.min(activeToasts, 4);
     const toast = document.createElement("div");
     toast.className = `center-action-toast ${variant}`;
     toast.innerText = text;
+    toast.style.setProperty("--toast-stack-offset", `${stackIndex * -64}px`);
     const duration = durationMs || (String(variant).includes("money") ? 3000 : 1600);
     toast.style.animationDuration = `${duration}ms`;
     target.appendChild(toast);
