@@ -66,7 +66,8 @@ Updates:
 - Disabled AI auto-Terastallize because bots were bypassing the new Tera charge rules and becoming unfairly strong against the human player.
 - Added Evolution Points as a non-trade growth path: first evolution costs 8 EP, second evolution costs 12 EP, and passing GO gives +3 EP.
 - Added EP rewards for battle wins, successful catches, catch quality bonuses, Free Parking, and property defense wins. The collection panel now shows the active partner EP meter and enables an EVOLVE button when ready.
-- Made Monopoly money/rent more visible: all currency now uses `$`, owned-property landings show a rent preview card with exact pay/challenge win/loss amounts, rent payments animate as a center-screen money transfer, and battle rent outcomes announce the actual dollar amount paid or collected.
+- Made Monopoly money/rent more visible: all currency now uses `$`, owned-property landings show a rent preview card with exact pay/challenge win/loss amounts, rent payments animate as a center-screen money transfer (duration extended to 4.5 seconds to read details clearly), and battle rent outcomes announce the actual dollar amount paid or collected.
 - Replaced the browser prompt battle item chooser with an in-game Battle Bag modal. Items are selected by clicking comic-style cards, unusable items such as Potion at full HP are disabled with a reason, and successful item use closes the modal without any browser dialogs.
 - Rebalanced the right sidebar layout so Pokémon Collection gets the available vertical space instead of a fixed 250px cap. Adventure Log now stays at the bottom and expands into its own smaller scrollable panel.
 - Corrected property defense rules/messaging: defending is now upside-only under the current rules. Winning can catch the challenger Pokémon and collect rent; losing collects $0 but keeps the property.
+
