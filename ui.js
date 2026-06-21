@@ -994,13 +994,15 @@ class UIManager {
     setTimeout(() => popup.remove(), 800);
   }
 
-  showCenterActionToast(text, variant = "info", host = null) {
+  showCenterActionToast(text, variant = "info", host = null, durationMs = null) {
     const target = host || document.body;
     const toast = document.createElement("div");
     toast.className = `center-action-toast ${variant}`;
     toast.innerText = text;
+    const duration = durationMs || (String(variant).includes("money") ? 3000 : 1600);
+    toast.style.animationDuration = `${duration}ms`;
     target.appendChild(toast);
-    setTimeout(() => toast.remove(), 1600);
+    setTimeout(() => toast.remove(), duration);
   }
 
   formatMoney(amount) {
@@ -1070,17 +1072,19 @@ class UIManager {
     if (value <= 0) return;
 
     const target = host || this.gameContainer || document.body;
-    this.showCenterActionToast(message || `${this.formatMoney(value)} paid`, "money", target);
+    const duration = 3000;
+    this.showCenterActionToast(message || `${this.formatMoney(value)} paid`, "money", target, duration);
 
     const burst = document.createElement("div");
     burst.className = "money-transfer-burst";
+    burst.style.animationDuration = `${duration}ms`;
     burst.innerHTML = `
       <span class="money-transfer-amount">-${this.formatMoney(value)}</span>
       <span class="money-transfer-route">${this.escapeHTML(fromName)} pays ${this.escapeHTML(toName)}</span>
       <span class="money-transfer-amount gain">+${this.formatMoney(value)}</span>
     `;
     target.appendChild(burst);
-    setTimeout(() => burst.remove(), 1900);
+    setTimeout(() => burst.remove(), duration);
   }
 
   showDamageNumber(side, damage) {
