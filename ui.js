@@ -2232,7 +2232,8 @@ class UIManager {
         highStakesDefenseBtn.className = "btn-comic btn-mortgage btn-battle-highlight";
         highStakesDefenseBtn.id = "high-stakes-defense-btn";
         const aiWagerOptions = this.getEligibleWagerOptions(player.id);
-        highStakesDefenseBtn.innerText = "HIGH STAKES DEFENSE";
+        highStakesDefenseBtn.innerText = aiWagerOptions.length > 0 ? "HIGH STAKES DEFENSE" : "HIGH STAKES (NO WAGER)";
+        highStakesDefenseBtn.disabled = aiWagerOptions.length === 0;
         this.rollBtn.parentNode.appendChild(highStakesDefenseBtn);
 
         // Also provide a fallback: pay full rent without battle
@@ -2261,9 +2262,13 @@ class UIManager {
         });
 
         highStakesDefenseBtn.addEventListener("click", () => {
-          const aiWager = aiWagerOptions[0] || null;
+          const aiWager = aiWagerOptions[0];
+          if (!aiWager) {
+            this.setDialogText(`${player.name} has no unlocked non-partner Pokémon to wager, so High Stakes Defense is not available.`);
+            return;
+          }
           cleanupChallenge();
-          this.setDialogText(`High Stakes Defense! Win to collect 1.5x rent${aiWager ? ` and take ${aiWager.name}` : ""}. Lose and ${player.name} gets half rent plus a catch chance, but you keep ${space.name}.`);
+          this.setDialogText(`High Stakes Defense! Win to collect 1.5x rent and take ${aiWager.name}. Lose and ${player.name} gets half rent plus a catch chance, but you keep ${space.name}.`);
           this.promptPokemonSelection((selectedPoke) => {
             this.initiateTrainerBattle(selectedPoke, player.pokemon, spaceId, player.id, owner.id, {
               mode: "high",

@@ -76,3 +76,4 @@ Updates:
 - High Stakes battles now require an unlocked non-partner wager Pokémon from the attacker. Attacker win plus catch transfers the property and downgrades one upgrade; attacker loss pays 1.5x rent and gives the wager to the owner.
 - High Stakes defense now gives the defender a meaningful upside: winning collects 2x rent and takes the attacker's wager; losing gives the attacker a catch chance to take the property with one upgrade removed.
 - Verified with syntax checks, the web-game Playwright smoke client, and deterministic browser scenarios for Normal attacker win, High Stakes attacker win/loss, High Stakes defender win, and High Stakes defender loss/property transfer.
+- Tightened High Stakes Defense so it requires the challenger to have an unlocked non-partner wager Pokémon before starting; verified a defender win transfers the attacker's wager Pokémon into the defender's collection and removes it from the attacker.
