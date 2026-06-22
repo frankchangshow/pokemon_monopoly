@@ -697,7 +697,7 @@ class UIManager {
   }
 
   canSaveCurrentState() {
-    const tempIds = ["wild-battle-btn", "trainer-battle-btn", "pay-rent-btn", "accept-challenge-btn", "resolve-debt-btn", "color-set-upgrade-btn"];
+    const tempIds = ["wild-battle-btn", "trainer-battle-btn", "high-stakes-battle-btn", "pay-rent-btn", "accept-challenge-btn", "high-stakes-defense-btn", "resolve-debt-btn", "color-set-upgrade-btn"];
     const hasTempPrompt = tempIds.some(id => !!document.getElementById(id));
     const blockingOverlay =
       Battle.activeBattle ||
@@ -1916,7 +1916,7 @@ class UIManager {
     this.hideEncounterSprite();
 
     // Clean up any stale temporary buttons from the control panel
-    const idsToClean = ["wild-battle-btn", "trainer-battle-btn", "pay-rent-btn", "accept-challenge-btn", "resolve-debt-btn", "pay-rent-fallback-btn", "color-set-upgrade-btn"];
+    const idsToClean = ["wild-battle-btn", "trainer-battle-btn", "high-stakes-battle-btn", "pay-rent-btn", "accept-challenge-btn", "high-stakes-defense-btn", "resolve-debt-btn", "pay-rent-fallback-btn", "color-set-upgrade-btn"];
     idsToClean.forEach(id => {
       const btn = document.getElementById(id);
       if (btn) btn.remove();
@@ -2008,7 +2008,7 @@ class UIManager {
     const space = this.game.spaces[spaceId];
     
     // Clean up any stale temporary buttons from the control panel
-    const idsToClean = ["wild-battle-btn", "trainer-battle-btn", "pay-rent-btn", "accept-challenge-btn", "resolve-debt-btn", "pay-rent-fallback-btn", "color-set-upgrade-btn"];
+    const idsToClean = ["wild-battle-btn", "trainer-battle-btn", "high-stakes-battle-btn", "pay-rent-btn", "accept-challenge-btn", "high-stakes-defense-btn", "resolve-debt-btn", "pay-rent-fallback-btn", "color-set-upgrade-btn"];
     idsToClean.forEach(id => {
       const btn = document.getElementById(id);
       if (btn) btn.remove();
@@ -2225,8 +2225,16 @@ class UIManager {
         const acceptChallengeBtn = document.createElement("button");
         acceptChallengeBtn.className = "btn-comic btn-roll btn-battle-highlight";
         acceptChallengeBtn.id = "accept-challenge-btn";
-        acceptChallengeBtn.innerText = "DEFEND PROPERTY (Battle!)";
+        acceptChallengeBtn.innerText = "DEFEND PROPERTY (Normal)";
         this.rollBtn.parentNode.appendChild(acceptChallengeBtn);
+
+        const highStakesDefenseBtn = document.createElement("button");
+        highStakesDefenseBtn.className = "btn-comic btn-mortgage btn-battle-highlight";
+        highStakesDefenseBtn.id = "high-stakes-defense-btn";
+        const aiWagerOptions = this.getEligibleWagerOptions(player.id);
+        highStakesDefenseBtn.innerText = aiWagerOptions.length > 0 ? "HIGH STAKES DEFENSE" : "HIGH STAKES (NO WAGER)";
+        highStakesDefenseBtn.disabled = aiWagerOptions.length === 0;
+        this.rollBtn.parentNode.appendChild(highStakesDefenseBtn);
 
         // Also provide a fallback: pay full rent without battle
         const payRentFallbackBtn = document.createElement("button");
@@ -2240,6 +2248,8 @@ class UIManager {
           this.hideEncounterSprite();
           const ac = document.getElementById("accept-challenge-btn");
           if (ac) ac.remove();
+          const hsd = document.getElementById("high-stakes-defense-btn");
+          if (hsd) hsd.remove();
           const prf = document.getElementById("pay-rent-fallback-btn");
           if (prf) prf.remove();
         };
@@ -2247,7 +2257,19 @@ class UIManager {
         acceptChallengeBtn.addEventListener("click", () => {
           cleanupChallenge();
           this.promptPokemonSelection((selectedPoke) => {
-            this.initiateTrainerBattle(selectedPoke, player.pokemon, spaceId, player.id, owner.id);
+            this.initiateTrainerBattle(selectedPoke, player.pokemon, spaceId, player.id, owner.id, { mode: "normal" });
+          });
+        });
+
+        highStakesDefenseBtn.addEventListener("click", () => {
+          const aiWager = aiWagerOptions[0];
+          cleanupChallenge();
+          this.setDialogText(`High Stakes Defense! Win to collect 2x rent and take ${aiWager.name}. Lose and ${player.name} may catch the property Pokémon to take ${space.name}.`);
+          this.promptPokemonSelection((selectedPoke) => {
+            this.initiateTrainerBattle(selectedPoke, player.pokemon, spaceId, player.id, owner.id, {
+              mode: "high",
+              attackerWager: aiWager
+            });
           });
         });
 
@@ -2292,8 +2314,16 @@ class UIManager {
       const challengeBtn = document.createElement("button");
       challengeBtn.className = "btn-comic btn-roll btn-battle-highlight";
       challengeBtn.id = "trainer-battle-btn";
-      challengeBtn.innerText = "CHALLENGE OWNER (50% Rent on win / 1.5x on loss)";
+      challengeBtn.innerText = "NORMAL BATTLE (50% / 1.5x)";
       this.buyBtn.parentNode.insertBefore(challengeBtn, this.buyBtn);
+
+      const highStakesBtn = document.createElement("button");
+      highStakesBtn.className = "btn-comic btn-mortgage btn-battle-highlight";
+      highStakesBtn.id = "high-stakes-battle-btn";
+      const humanWagerOptions = this.getEligibleWagerOptions(player.id);
+      highStakesBtn.innerText = humanWagerOptions.length > 0 ? "HIGH STAKES BATTLE" : "HIGH STAKES (NO WAGER)";
+      highStakesBtn.disabled = humanWagerOptions.length === 0;
+      this.buyBtn.parentNode.insertBefore(highStakesBtn, this.buyBtn);
 
       const payBtn = document.createElement("button");
       payBtn.className = "btn-comic btn-buy btn-buy-small";
@@ -2305,9 +2335,28 @@ class UIManager {
         this.isEncounterActive = false;
         this.hideEncounterSprite();
         challengeBtn.remove();
+        highStakesBtn.remove();
         payBtn.remove();
         this.promptPokemonSelection((selectedPoke) => {
-          this.initiateTrainerBattle(selectedPoke, owner.pokemon, spaceId, player.id, owner.id);
+          this.initiateTrainerBattle(selectedPoke, owner.pokemon, spaceId, player.id, owner.id, { mode: "normal" });
+        });
+      });
+
+      highStakesBtn.addEventListener("click", () => {
+        this.promptWagerSelection(player.id, (wager) => {
+          if (!wager) return;
+          this.isEncounterActive = false;
+          this.hideEncounterSprite();
+          challengeBtn.remove();
+          highStakesBtn.remove();
+          payBtn.remove();
+          this.setDialogText(`High Stakes! Win and catch to take ${space.name}. Lose and you give up ${wager.name} plus penalty rent.`);
+          this.promptPokemonSelection((selectedPoke) => {
+            this.initiateTrainerBattle(selectedPoke, owner.pokemon, spaceId, player.id, owner.id, {
+              mode: "high",
+              attackerWager: wager
+            });
+          });
         });
       });
 
@@ -2315,6 +2364,7 @@ class UIManager {
         this.isEncounterActive = false;
         this.hideEncounterSprite();
         challengeBtn.remove();
+        highStakesBtn.remove();
         payBtn.remove();
         const rentResult = this.game.payRent(player.id, spaceId, 0);
         this.showMoneyTransfer(rentResult.rent, player.name, owner.name, `Paid ${this.formatMoney(rentResult.rent)} rent to ${owner.name}`, this.gameContainer);
@@ -2448,6 +2498,9 @@ class UIManager {
 
     // Otherwise, show selection overlay
     this.pokemonSelectionOverlay.style.display = "flex";
+    this.pokemonSelectionOverlay.querySelector(".pokemon-selection-title").innerText = "CHOOSE YOUR FIGHTER";
+    this.pokemonSelectionOverlay.querySelector(".pokemon-selection-subtitle").innerText = "Select a Pokémon from your inventory for this battle:";
+    this.pokemonSelectionConfirmBtn.innerText = "SEND INTO BATTLE!";
     Sound.playClick();
 
     // Prepare list of options: active partner + one current form per evolution line.
@@ -2506,6 +2559,108 @@ class UIManager {
       const chosenPokemon = options[selectedOptionIndex].name;
       callback(chosenPokemon);
     };
+  }
+
+  getEligibleWagerOptions(playerIdx) {
+    const player = this.game.players[playerIdx];
+    if (!player) return [];
+    this.game.normalizeCollectionMeta(player);
+    if (!Array.isArray(player.collection)) player.collection = [];
+    return player.collection
+      .map((name, idx) => ({ name, idx }))
+      .filter(option => !this.isCollectionPokemonLocked(player, option.name));
+  }
+
+  promptWagerSelection(playerIdx, callback) {
+    const player = this.game.players[playerIdx];
+    const options = this.getEligibleWagerOptions(playerIdx);
+    if (!player || options.length === 0) {
+      this.setDialogText(`${player?.name || "This trainer"} has no unlocked non-partner Pokémon to wager.`);
+      callback(null);
+      return;
+    }
+    if (player.isAI) {
+      callback(options[0]);
+      return;
+    }
+
+    this.pokemonSelectionOverlay.style.display = "flex";
+    this.pokemonSelectionOverlay.querySelector(".pokemon-selection-title").innerText = "CHOOSE YOUR WAGER";
+    this.pokemonSelectionOverlay.querySelector(".pokemon-selection-subtitle").innerText = "High Stakes: if you lose, this Pokémon goes to the property owner.";
+    this.pokemonSelectionConfirmBtn.innerText = "WAGER THIS POKÉMON";
+    Sound.playClick();
+
+    let selectedOptionIndex = 0;
+    const renderGrid = () => {
+      this.pokemonSelectionGrid.innerHTML = options.map((opt, idx) => {
+        const lowerName = opt.name.toLowerCase();
+        const spriteHtml = AVAILABLE_PNGS.includes(lowerName)
+          ? `<img src="images/${lowerName}.png" alt="${this.escapeHTML(opt.name)}">`
+          : (PokemonSVGs[opt.name] || "");
+        const pokeInfo = PokemonDB[opt.name] || { type: "Normal" };
+        const currentLevel = this.game.getPokemonLevel(player, opt.name);
+        return `
+          <div class="fighter-card ${selectedOptionIndex === idx ? "selected" : ""}" data-opt-idx="${idx}">
+            <div class="fighter-badge">WAGER</div>
+            <div class="fighter-level-badge">Lv. ${currentLevel}</div>
+            <div class="fighter-sprite">${spriteHtml}</div>
+            <div class="fighter-name">${this.escapeHTML(opt.name)}</div>
+            <span class="move-type-tag ${pokeInfo.type.toLowerCase()}">${this.escapeHTML(pokeInfo.type)}</span>
+          </div>
+        `;
+      }).join("");
+      this.pokemonSelectionGrid.querySelectorAll(".fighter-card").forEach(card => {
+        card.addEventListener("click", () => {
+          selectedOptionIndex = parseInt(card.getAttribute("data-opt-idx"), 10);
+          Sound.playClick();
+          renderGrid();
+        });
+      });
+    };
+
+    renderGrid();
+    this.pokemonSelectionConfirmBtn.onclick = () => {
+      this.pokemonSelectionOverlay.style.display = "none";
+      Sound.playClick();
+      callback(options[selectedOptionIndex]);
+    };
+  }
+
+  transferWagerPokemon(fromIdx, toIdx, wager) {
+    const fromPlayer = this.game.players[fromIdx];
+    const toPlayer = this.game.players[toIdx];
+    if (!fromPlayer || !toPlayer || !wager) return false;
+    if (!Array.isArray(fromPlayer.collection)) fromPlayer.collection = [];
+    if (!Array.isArray(toPlayer.collection)) toPlayer.collection = [];
+    this.game.normalizeCollectionMeta(fromPlayer);
+    this.game.normalizeCollectionMeta(toPlayer);
+
+    let idx = wager.idx;
+    if (fromPlayer.collection[idx] !== wager.name) {
+      idx = fromPlayer.collection.indexOf(wager.name);
+    }
+    if (idx < 0 || this.isCollectionPokemonLocked(fromPlayer, fromPlayer.collection[idx])) return false;
+
+    const [pokemonName] = fromPlayer.collection.splice(idx, 1);
+    const [meta] = fromPlayer.collectionMeta.splice(idx, 1);
+    toPlayer.collection.push(pokemonName);
+    toPlayer.collectionMeta.push(meta || null);
+    fromPlayer.lockedCollectionPokemon = (fromPlayer.lockedCollectionPokemon || []).filter(name => name !== pokemonName);
+    this.game.log(`${toPlayer.name} won ${pokemonName} from ${fromPlayer.name} in a High Stakes battle!`);
+    this.renderCollection();
+    this.updateUI();
+    return true;
+  }
+
+  degradePropertyForHighStakes(spaceId) {
+    const current = this.game.buildings[spaceId] || 0;
+    if (current <= 0) return 0;
+    this.game.buildings[spaceId] = current - 1;
+    const space = this.game.spaces[spaceId];
+    this.game.log(`${space.name} lost one upgrade after the High Stakes takeover.`);
+    const ownerIdx = this.game.ownership[spaceId];
+    if (ownerIdx !== undefined) this.game.recalculatePlayerStats(ownerIdx);
+    return current - 1;
   }
 
   getCanonicalCollectionBattleOptions(player) {
@@ -3670,7 +3825,7 @@ class UIManager {
     return quality === "Great" ? "Good" : quality;
   }
 
-  initiateTrainerBattle(playerPoke, enemyPoke, spaceId, challengerIdx, ownerIdx) {
+  initiateTrainerBattle(playerPoke, enemyPoke, spaceId, challengerIdx, ownerIdx, battleOptions = {}) {
     this.resetBattleUIState();
     this.prevPlayerTera = false;
     this.prevEnemyTera = false;
@@ -3683,6 +3838,9 @@ class UIManager {
     // The battle UI always puts the human-controlled side in the player slot.
     // When an AI challenges a human-owned property, playerPoke belongs to the owner/defender.
     const isHumanChallenger = challengerIdx === 0;
+    const battleMode = battleOptions.mode || "normal";
+    const isHighStakes = battleMode === "high";
+    const attackerWager = battleOptions.attackerWager || null;
     const playerSideIdx = isHumanChallenger ? challengerIdx : ownerIdx;
     const enemySideIdx = isHumanChallenger ? ownerIdx : challengerIdx;
     const pLevel = this.game.getPokemonLevel(this.game.players[playerSideIdx], playerPoke);
@@ -3701,7 +3859,7 @@ class UIManager {
       this.awardBattleItemDrop(this.game.players[playerSideIdx], won, won ? "battle" : "loss");
       if (won) this.awardEvolutionPoints(this.game.players[playerSideIdx], playerPoke, 1, "battle win", this.gameContainer);
       
-      const activePlayer = this.game.getCurrentPlayer();
+      const activePlayer = this.game.players[challengerIdx] || this.game.getCurrentPlayer();
       const space = this.game.spaces[spaceId];
       const owner = this.game.players[ownerIdx];
 
@@ -3709,17 +3867,36 @@ class UIManager {
         if (won) {
           this.initiateCatchMiniGame(spaceId, (success) => {
             if (success) {
-              const player0 = this.game.players[0];
-              this.game.transferPropertyOwnership(spaceId, 0);
               this.awardEvolutionPoints(this.game.players[0], playerPoke, 1, "caught a Pokémon", this.gameContainer);
-              this.renderCollection();
-              this.showCenterActionToast(`Caught ${enemyPoke} and claimed ${space.name}!`, "money", this.gameContainer);
-              this.setDialogText(`GOTCHA! You caught ${enemyPoke} and claimed ${space.name} from ${owner.name}!`);
-              this.updateUI();
-              this.showColorSetUpgradePrompt(spaceId);
-              this.resolveDuesCheck(0, null, () => {
-                this.endBtn.style.display = "inline-block";
-              });
+              if (isHighStakes) {
+                this.degradePropertyForHighStakes(spaceId);
+                this.game.transferPropertyOwnership(spaceId, 0);
+                this.renderCollection();
+                this.showCenterActionToast(`High Stakes win! Claimed ${space.name}!`, "money", this.gameContainer);
+                this.setDialogText(`GOTCHA! You caught ${enemyPoke} and claimed ${space.name} from ${owner.name}! One upgrade was removed if present.`);
+                this.updateUI();
+                this.showColorSetUpgradePrompt(spaceId);
+                this.resolveDuesCheck(0, null, () => {
+                  this.endBtn.style.display = "inline-block";
+                });
+              } else {
+                const player0 = this.game.players[0];
+                if (!player0.collection) player0.collection = [];
+                this.game.normalizeCollectionMeta(player0);
+                if (!player0.collection.includes(enemyPoke)) {
+                  player0.collection.push(enemyPoke);
+                  player0.collectionMeta.push(null);
+                }
+                const rentResult = this.game.payRent(0, spaceId, 50);
+                this.showMoneyTransfer(rentResult.rent, this.game.players[0].name, owner.name, `Normal battle discount rent: ${this.formatMoney(rentResult.rent)}`, this.gameContainer);
+                this.renderCollection();
+                this.showCenterActionToast(`Caught ${enemyPoke} and paid 50% rent!`, "money", this.gameContainer);
+                this.setDialogText(`GOTCHA! You caught ${enemyPoke} for your collection and paid discounted rent ${this.formatMoney(rentResult.rent)} to ${owner.name}. ${owner.name} keeps ${space.name}.`);
+                this.updateUI();
+                this.resolveDuesCheck(0, ownerIdx, () => {
+                  this.endBtn.style.display = "inline-block";
+                });
+              }
             } else {
               const rentResult = this.game.payRent(0, spaceId, 50);
               this.showMoneyTransfer(rentResult.rent, this.game.players[0].name, owner.name, `Battle discount rent: ${this.formatMoney(rentResult.rent)}`, this.gameContainer);
@@ -3733,7 +3910,11 @@ class UIManager {
         } else {
           const rentResult = this.game.payRent(0, spaceId, -50);
           this.showMoneyTransfer(rentResult.rent, this.game.players[0].name, owner.name, `Penalty rent paid: ${this.formatMoney(rentResult.rent)}`, this.gameContainer);
-          this.setDialogText(`Defeat! You paid 1.5x penalty rent ${this.formatMoney(rentResult.rent)} to ${owner.name}.`);
+          let wagerText = "";
+          if (isHighStakes && attackerWager && this.transferWagerPokemon(0, ownerIdx, attackerWager)) {
+            wagerText = ` You also lost ${attackerWager.name} to ${owner.name}.`;
+          }
+          this.setDialogText(`Defeat! You paid 1.5x penalty rent ${this.formatMoney(rentResult.rent)} to ${owner.name}.${wagerText}`);
           this.resolveDuesCheck(0, ownerIdx, () => {
             this.updateUI();
             this.endBtn.style.display = "inline-block";
@@ -3744,20 +3925,23 @@ class UIManager {
         // Battle engine's "won" means the human-side battler won. Here, the human is the property defender.
         if (won) {
           const humanOwner = this.game.players[0];
-          if (!humanOwner.collection) humanOwner.collection = [];
-          this.game.normalizeCollectionMeta(humanOwner);
-          if (!humanOwner.collection.includes(enemyPoke)) {
-            humanOwner.collection.push(enemyPoke);
-            humanOwner.collectionMeta.push(null);
-          }
-          this.renderCollection();
-          this.setDialogText(`Property defended! You caught ${enemyPoke}, and ${activePlayer.name} pays full rent.`);
-          this.game.log(`🛡️ Property defended! You caught ${enemyPoke} from ${activePlayer.name}.`);
           this.awardEvolutionPoints(humanOwner, playerPoke, 1, "property defense", this.gameContainer);
-          const rentResult = this.game.payRent(activePlayer.id, spaceId, 0);
+          const rentResult = this.game.payRent(activePlayer.id, spaceId, isHighStakes ? -100 : 0);
           if (rentResult.rent > 0) {
-            this.showMoneyTransfer(rentResult.rent, activePlayer.name, humanOwner.name, `Defense won: collected ${this.formatMoney(rentResult.rent)} rent!`, this.gameContainer);
+            const label = isHighStakes
+              ? `High Stakes defense: collected ${this.formatMoney(rentResult.rent)} double rent!`
+              : `Defense won: collected ${this.formatMoney(rentResult.rent)} rent!`;
+            this.showMoneyTransfer(rentResult.rent, activePlayer.name, humanOwner.name, label, this.gameContainer);
           }
+          let wagerText = "";
+          if (isHighStakes && attackerWager && this.transferWagerPokemon(activePlayer.id, 0, attackerWager)) {
+            wagerText = ` You also won ${attackerWager.name} from ${activePlayer.name}.`;
+          }
+          this.setDialogText(isHighStakes
+            ? `High Stakes defended! ${activePlayer.name} paid double rent ${this.formatMoney(rentResult.rent)}.${wagerText}`
+            : `Property defended! ${activePlayer.name} pays full rent ${this.formatMoney(rentResult.rent)}.`
+          );
+          this.game.log(`🛡️ ${owner.name} defended ${space.name}. ${activePlayer.name} paid ${this.formatMoney(rentResult.rent)} rent.`);
           this.isEncounterActive = false;
           this.resolveDuesCheck(activePlayer.id, 0, () => {
             this.updateUI();
@@ -3766,13 +3950,41 @@ class UIManager {
             });
           });
         } else {
-          this.setDialogText(`Defense failed! ${activePlayer.name} avoided paying rent this time. You keep ${space.name}.`);
-          this.game.log(`Defense failed on ${space.name}. ${activePlayer.name} paid $0 rent, and ${owner.name} kept the property.`);
-          this.isEncounterActive = false;
-          this.resolveDuesCheck(activePlayer.id, 0, () => {
-            this.updateUI();
-            setTimeout(() => this.executeAITurnEnd(), 800);
-          });
+          if (isHighStakes) {
+            const catchSuccess = Math.random() < 0.65;
+            if (catchSuccess) {
+              const reducedTo = this.degradePropertyForHighStakes(spaceId);
+              this.game.transferPropertyOwnership(spaceId, activePlayer.id);
+              const upgradeText = reducedTo >= 0 ? " One upgrade was removed if present." : "";
+              this.setDialogText(`High Stakes defense failed! ${activePlayer.name} caught ${space.pokemon} and took ${space.name}.${upgradeText}`);
+              this.game.log(`High Stakes loss: ${activePlayer.name} took ${space.name} from ${owner.name}.`);
+              this.isEncounterActive = false;
+              this.resolveDuesCheck(activePlayer.id, null, () => {
+                this.updateUI();
+                setTimeout(() => this.executeAITurnEnd(), 800);
+              });
+            } else {
+              const rentResult = this.game.payRent(activePlayer.id, spaceId, 50);
+              if (rentResult.rent > 0) {
+                this.showMoneyTransfer(rentResult.rent, activePlayer.name, owner.name, `High Stakes catch failed: collected ${this.formatMoney(rentResult.rent)} discount rent.`, this.gameContainer);
+              }
+              this.setDialogText(`Defense failed, but ${activePlayer.name} failed the catch. You keep ${space.name}; they paid discount rent ${this.formatMoney(rentResult.rent)}.`);
+              this.game.log(`High Stakes catch failed on ${space.name}. ${owner.name} kept the property.`);
+              this.isEncounterActive = false;
+              this.resolveDuesCheck(activePlayer.id, 0, () => {
+                this.updateUI();
+                setTimeout(() => this.executeAITurnEnd(), 800);
+              });
+            }
+          } else {
+            this.setDialogText(`Defense failed! ${activePlayer.name} avoided paying rent this time. You keep ${space.name}.`);
+            this.game.log(`Defense failed on ${space.name}. ${activePlayer.name} paid $0 rent, and ${owner.name} kept the property.`);
+            this.isEncounterActive = false;
+            this.resolveDuesCheck(activePlayer.id, 0, () => {
+              this.updateUI();
+              setTimeout(() => this.executeAITurnEnd(), 800);
+            });
+          }
         }
       }
     }, pMoves, eMoves, pTraining, eTraining);

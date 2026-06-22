@@ -71,3 +71,8 @@ Updates:
 - Rebalanced the right sidebar layout so Pokémon Collection gets the available vertical space instead of a fixed 250px cap. Adventure Log now stays at the bottom and expands into its own smaller scrollable panel.
 - Corrected property defense rules/messaging: defending is now upside-only under the current rules. Winning can catch the challenger Pokémon and collect rent; losing collects $0 but keeps the property.
 - Created `codex/property-speed-experiment` for faster Monopoly pacing experiments: restored classic Monopoly board names, added color-set upgrade prompts and one-click even group upgrades, and restored owned-property challenge catches so a successful catch transfers the deed.
+- Created `codex/high-stakes-battle-mode` and split owned-property battles into Normal Battle/Defense and High Stakes Battle/Defense.
+- Normal battles now keep property ownership safe: human challenger wins can still catch the battle Pokémon and pay 50% rent, losses pay 1.5x rent, and defender normal wins collect full rent without taking a wager.
+- High Stakes battles now require an unlocked non-partner wager Pokémon from the attacker. Attacker win plus catch transfers the property and downgrades one upgrade; attacker loss pays 1.5x rent and gives the wager to the owner.
+- High Stakes defense now gives the defender a meaningful upside: winning collects 2x rent and takes the attacker's wager; losing gives the attacker a catch chance to take the property with one upgrade removed.
+- Verified with syntax checks, the web-game Playwright smoke client, and deterministic browser scenarios for Normal attacker win, High Stakes attacker win/loss, High Stakes defender win, and High Stakes defender loss/property transfer.
