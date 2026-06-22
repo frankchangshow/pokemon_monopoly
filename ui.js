@@ -3,12 +3,14 @@
  * Integrates assets, sounds, Monopoly engine, and Battle engine to render a dynamic comic-book game.
  */
 
-import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=38';
-import { Sound } from './sound.js?v=38';
-import { GameEngine, BattleItems } from './game.js?v=38';
-import { Battle } from './battle.js?v=38';
+import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=39';
+import { Sound } from './sound.js?v=39';
+import { GameEngine, BattleItems } from './game.js?v=39';
+import { Battle } from './battle.js?v=39';
 
 window.Battle = Battle;
+
+const ASSET_VERSION = "39";
 
 const AVAILABLE_PNGS = [
   "sprigatito", "fuecoco", "quaxly", "pawmi",
@@ -1748,6 +1750,21 @@ class UIManager {
       return `<img src="images/${lowerName}.png" alt="${this.escapeHTML(pokemonName)}">`;
     }
     return PokemonSVGs[pokemonName] || "";
+  }
+
+  getBattlePokemonSpriteMarkup(pokemon, preferTera = false) {
+    if (!pokemon?.name) return "";
+    const lowerName = pokemon.name.toLowerCase();
+    const imageName = preferTera ? `${lowerName}_tera` : lowerName;
+    const imageSrc = `images/${encodeURIComponent(imageName)}.png?v=${ASSET_VERSION}`;
+    const fallbackSrc = `images/${encodeURIComponent(lowerName)}.png?v=${ASSET_VERSION}`;
+    const alt = this.escapeHTML(pokemon.name);
+    const fallbackMarkup = this.escapeHTML(PokemonSVGs[pokemon.name] || this.getMysterySpriteMarkup({
+      name: pokemon.name,
+      type: pokemon.type
+    }));
+
+    return `<img src="${imageSrc}" alt="${alt}" style="width:100%; height:100%; object-fit:contain; border:3px solid #000; border-radius:12px; box-shadow:var(--box-shadow-comic);" onerror="if (this.dataset.fallbackTried) { this.outerHTML = this.dataset.fallbackMarkup; } else { this.dataset.fallbackTried = '1'; this.src = '${fallbackSrc}'; }" data-fallback-markup="${fallbackMarkup}">`;
   }
 
   renderVictoryConfetti() {
@@ -3750,8 +3767,6 @@ class UIManager {
     const battle = Battle.activeBattle;
     if (!battle) return;
 
-    const availablePNGs = AVAILABLE_PNGS;
-
     // Check for new Terastallization triggers to play visual effects
     if (battle.player.terastallized && !this.prevPlayerTera) {
       this.prevPlayerTera = true;
@@ -3782,18 +3797,8 @@ class UIManager {
     this.playerHpText.innerText = `${battle.player.hp} / ${battle.player.maxHp} HP`;
     this.playerHpBar.style.width = `${(battle.player.hp / battle.player.maxHp) * 100}%`;
     
-    const lowerPlayer = battle.player.name.toLowerCase();
     const isPlayerTera = battle.player.terastallized;
-    const playerImgName = isPlayerTera && availablePNGs.includes(`${lowerPlayer}_tera`) ? `${lowerPlayer}_tera` : lowerPlayer;
-
-    if (availablePNGs.includes(playerImgName)) {
-      this.playerBattleSprite.innerHTML = `<img src="images/${playerImgName}.png" alt="${battle.player.name}" style="width:100%; height:100%; object-fit:contain; border:3px solid #000; border-radius:12px; box-shadow:var(--box-shadow-comic);">`;
-    } else {
-      this.playerBattleSprite.innerHTML = PokemonSVGs[battle.player.name] || this.getMysterySpriteMarkup({
-        name: battle.player.name,
-        type: battle.player.type
-      });
-    }
+    this.playerBattleSprite.innerHTML = this.getBattlePokemonSpriteMarkup(battle.player, isPlayerTera);
 
     if (isPlayerTera) {
       this.playerBattleSprite.classList.add("tera-active");
@@ -3806,18 +3811,8 @@ class UIManager {
     this.enemyHpText.innerText = `${battle.enemy.hp} / ${battle.enemy.maxHp} HP`;
     this.enemyHpBar.style.width = `${(battle.enemy.hp / battle.enemy.maxHp) * 100}%`;
     
-    const lowerEnemy = battle.enemy.name.toLowerCase();
     const isEnemyTera = battle.enemy.terastallized;
-    const enemyImgName = isEnemyTera && availablePNGs.includes(`${lowerEnemy}_tera`) ? `${lowerEnemy}_tera` : lowerEnemy;
-
-    if (availablePNGs.includes(enemyImgName)) {
-      this.enemyBattleSprite.innerHTML = `<img src="images/${enemyImgName}.png" alt="${battle.enemy.name}" style="width:100%; height:100%; object-fit:contain; border:3px solid #000; border-radius:12px; box-shadow:var(--box-shadow-comic);">`;
-    } else {
-      this.enemyBattleSprite.innerHTML = PokemonSVGs[battle.enemy.name] || this.getMysterySpriteMarkup({
-        name: battle.enemy.name,
-        type: battle.enemy.type
-      });
-    }
+    this.enemyBattleSprite.innerHTML = this.getBattlePokemonSpriteMarkup(battle.enemy, isEnemyTera);
 
     if (isEnemyTera) {
       this.enemyBattleSprite.classList.add("tera-active");

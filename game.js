@@ -3,8 +3,8 @@
  * Core state machine for player turns, board movements, real-estate, cards, trading, and mortgaging.
  */
 
-import { BoardSpaces, AcademyCards, TeraRaidCards } from './assets.js?v=38';
-import { Sound } from './sound.js?v=38';
+import { BoardSpaces, AcademyCards, TeraRaidCards } from './assets.js?v=39';
+import { Sound } from './sound.js?v=39';
 
 export const BattleItems = {
   potion: { id: "potion", name: "Potion", kind: "battle", text: "Restore 20 HP during battle.", heal: 20, rarity: "Common" },
