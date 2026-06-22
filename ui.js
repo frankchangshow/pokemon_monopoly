@@ -1098,28 +1098,28 @@ class UIManager {
       if (space.pokemon) {
         const lowerPoke = space.pokemon.toLowerCase();
         if (availablePNGs.includes(lowerPoke)) {
-          icon.innerHTML = `<img src="images/${lowerPoke}.png" alt="${space.pokemon}">`;
+          icon.innerHTML = `<img src="images/${lowerPoke}.png?v=${ASSET_VERSION}" alt="${space.pokemon}">`;
         } else if (PokemonSVGs[space.pokemon]) {
           icon.innerHTML = PokemonSVGs[space.pokemon];
         }
       } else if (space.type === "GO") {
-        icon.innerHTML = `<img src="images/go_full.png" alt="GO">`;
+        icon.innerHTML = `<img src="images/go_full.png?v=${ASSET_VERSION}" alt="GO">`;
       } else if (space.type === "jail") {
-        icon.innerHTML = `<img src="images/jail_full.png" alt="Jail">`;
+        icon.innerHTML = `<img src="images/jail_full.png?v=${ASSET_VERSION}" alt="Jail">`;
       } else if (space.type === "parking") {
-        icon.innerHTML = `<img src="images/free_parking_full.png" alt="Free Parking">`;
+        icon.innerHTML = `<img src="images/free_parking_full.png?v=${ASSET_VERSION}" alt="Free Parking">`;
       } else if (space.type === "gotojail") {
-        icon.innerHTML = `<img src="images/go_to_jail_full.png" alt="Go to Jail">`;
+        icon.innerHTML = `<img src="images/go_to_jail_full.png?v=${ASSET_VERSION}" alt="Go to Jail">`;
       } else if (space.type === "tax") {
         if (space.id === 4) {
-          icon.innerHTML = `<img src="images/poke_mart_tax.png" alt="Poke Mart Tax">`;
+          icon.innerHTML = `<img src="images/poke_mart_tax.png?v=${ASSET_VERSION}" alt="Poke Mart Tax">`;
         } else {
-          icon.innerHTML = `<img src="images/league_assessment_tax.png" alt="League Assessment Tax">`;
+          icon.innerHTML = `<img src="images/league_assessment_tax.png?v=${ASSET_VERSION}" alt="League Assessment Tax">`;
         }
       } else if (space.type === "raid") {
-        icon.innerHTML = `<img src="images/tera_raid_chest.png" alt="Tera Raid Chest">`;
+        icon.innerHTML = `<img src="images/tera_raid_chest.png?v=${ASSET_VERSION}" alt="Tera Raid Chest">`;
       } else if (space.type === "academy") {
-        icon.innerHTML = `<img src="images/academy_class.png" alt="Academy Class">`;
+        icon.innerHTML = `<img src="images/academy_class.png?v=${ASSET_VERSION}" alt="Academy Class">`;
       }
       content.appendChild(icon);
 
