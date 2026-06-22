@@ -3,14 +3,14 @@
  * Integrates assets, sounds, Monopoly engine, and Battle engine to render a dynamic comic-book game.
  */
 
-import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=39';
-import { Sound } from './sound.js?v=39';
-import { GameEngine, BattleItems } from './game.js?v=39';
-import { Battle } from './battle.js?v=39';
+import { PokemonSVGs, PokemonDB, BoardSpaces, SpecialSVGs } from './assets.js?v=40';
+import { Sound } from './sound.js?v=40';
+import { GameEngine, BattleItems } from './game.js?v=40';
+import { Battle } from './battle.js?v=40';
 
 window.Battle = Battle;
 
-const ASSET_VERSION = "39";
+const ASSET_VERSION = "40";
 
 const AVAILABLE_PNGS = [
   "sprigatito", "fuecoco", "quaxly", "pawmi",
@@ -389,6 +389,7 @@ class UIManager {
       this.setDialogText(`You bought ${space.name} (${space.pokemon}) for $${purchaseCost}!`);
       this.updateUI();
       this.maybeTriggerMysteryEncounter(player, "propertyClaim", () => {
+        this.showColorSetUpgradePrompt(pos);
         this.endBtn.style.display = "inline-block";
       });
     });
@@ -696,7 +697,7 @@ class UIManager {
   }
 
   canSaveCurrentState() {
-    const tempIds = ["wild-battle-btn", "trainer-battle-btn", "pay-rent-btn", "accept-challenge-btn", "resolve-debt-btn"];
+    const tempIds = ["wild-battle-btn", "trainer-battle-btn", "pay-rent-btn", "accept-challenge-btn", "resolve-debt-btn", "color-set-upgrade-btn"];
     const hasTempPrompt = tempIds.some(id => !!document.getElementById(id));
     const blockingOverlay =
       Battle.activeBattle ||
@@ -1004,7 +1005,7 @@ class UIManager {
     toast.className = `center-action-toast ${variant}`;
     toast.innerText = text;
     toast.style.setProperty("--toast-stack-offset", `${stackIndex * -64}px`);
-    const duration = durationMs || (String(variant).includes("money") ? 3000 : 1600);
+    const duration = durationMs || (String(variant).includes("money") ? 5000 : 1600);
     toast.style.animationDuration = `${duration}ms`;
     target.appendChild(toast);
     setTimeout(() => toast.remove(), duration);
@@ -1029,7 +1030,7 @@ class UIManager {
     if (value <= 0) return;
 
     const target = host || this.gameContainer || document.body;
-    const duration = 3000;
+    const duration = 5000;
     this.showCenterActionToast(message || `${this.formatMoney(value)} paid`, "money", target, duration);
 
     const burst = document.createElement("div");
@@ -1201,6 +1202,9 @@ class UIManager {
     }
 
     const upgradeBtnState = this.game.canBuildCamp(0, spaceId) || this.game.canBuildGym(0, spaceId) ? "" : "disabled";
+    const groupUpgradePlan = this.game.getGroupUpgradePlan(0, spaceId);
+    const groupUpgradeBtnState = groupUpgradePlan.ready ? "" : "disabled";
+    const groupUpgradeLabel = groupUpgradePlan.ready ? `UPGRADE SET ($${groupUpgradePlan.totalCost})` : "UPGRADE SET";
     const sellBtnState = hasOwner && ownerIdx === 0 && buildingsCount > 0 ? "" : "disabled";
     const mortgageBtnText = isMortgaged ? "UNMORTGAGE" : "MORTGAGE";
     const mortgageBtnState = isMortgaged ? (this.game.canUnmortgage(0, spaceId) ? "" : "disabled") : (this.game.canMortgage(0, spaceId) ? "" : "disabled");
@@ -1336,6 +1340,7 @@ class UIManager {
       ${isPlayerOwned ? `
         <div class="deed-actions">
           <button class="btn-comic btn-buy" id="deed-upgrade-btn" ${upgradeBtnState}>UPGRADE</button>
+          <button class="btn-comic btn-build" id="deed-group-upgrade-btn" ${groupUpgradeBtnState}>${groupUpgradeLabel}</button>
           <button class="btn-comic btn-end" id="deed-sell-btn" ${sellBtnState}>SELL</button>
           <button class="btn-comic btn-mortgage" id="deed-mortgage-btn" ${mortgageBtnState}>${mortgageBtnText}</button>
         </div>
@@ -1360,6 +1365,13 @@ class UIManager {
         } else {
           this.game.buildCamp(0, spaceId);
         }
+        this.renderDeedCard();
+        this.updateUI();
+      });
+
+      document.getElementById("deed-group-upgrade-btn").addEventListener("click", () => {
+        const result = this.game.buildGroupUpgrade(0, spaceId);
+        this.setDialogText(result.success ? `${result.kind}s added across the color set for $${result.totalCost}.` : result.message);
         this.renderDeedCard();
         this.updateUI();
       });
@@ -1394,6 +1406,29 @@ class UIManager {
     this.selectedDeedId = playerDeeds[0].id;
     this.renderDeedCard();
     this.deedOverlay.style.display = "flex";
+  }
+
+  showColorSetUpgradePrompt(spaceId) {
+    const space = this.game.spaces[spaceId];
+    if (!space || space.type !== "property" || !this.game.ownsColorGroup(0, space.group)) return;
+    const plan = this.game.getGroupUpgradePlan(0, spaceId);
+    if (!plan.ready) return;
+
+    const existing = document.getElementById("color-set-upgrade-btn");
+    if (existing) existing.remove();
+
+    this.setDialogText(`You own the complete ${space.group} color set! Upgrade all properties together?`);
+    const upgradeSetBtn = document.createElement("button");
+    upgradeSetBtn.className = "btn-comic btn-build";
+    upgradeSetBtn.id = "color-set-upgrade-btn";
+    upgradeSetBtn.innerText = `UPGRADE SET ($${plan.totalCost})`;
+    this.endBtn.parentNode.insertBefore(upgradeSetBtn, this.endBtn);
+    upgradeSetBtn.addEventListener("click", () => {
+      upgradeSetBtn.remove();
+      this.selectedDeedId = spaceId;
+      this.renderDeedCard();
+      this.deedOverlay.style.display = "flex";
+    });
   }
 
   // Update game board visual tokens, houses, sidebar, logs
@@ -1881,7 +1916,7 @@ class UIManager {
     this.hideEncounterSprite();
 
     // Clean up any stale temporary buttons from the control panel
-    const idsToClean = ["wild-battle-btn", "trainer-battle-btn", "pay-rent-btn", "accept-challenge-btn", "resolve-debt-btn", "pay-rent-fallback-btn"];
+    const idsToClean = ["wild-battle-btn", "trainer-battle-btn", "pay-rent-btn", "accept-challenge-btn", "resolve-debt-btn", "pay-rent-fallback-btn", "color-set-upgrade-btn"];
     idsToClean.forEach(id => {
       const btn = document.getElementById(id);
       if (btn) btn.remove();
@@ -1973,7 +2008,7 @@ class UIManager {
     const space = this.game.spaces[spaceId];
     
     // Clean up any stale temporary buttons from the control panel
-    const idsToClean = ["wild-battle-btn", "trainer-battle-btn", "pay-rent-btn", "accept-challenge-btn", "resolve-debt-btn", "pay-rent-fallback-btn"];
+    const idsToClean = ["wild-battle-btn", "trainer-battle-btn", "pay-rent-btn", "accept-challenge-btn", "resolve-debt-btn", "pay-rent-fallback-btn", "color-set-upgrade-btn"];
     idsToClean.forEach(id => {
       const btn = document.getElementById(id);
       if (btn) btn.remove();
@@ -2899,6 +2934,7 @@ class UIManager {
             this.endBtn.innerText = "END TURN";
             this.endBtn.style.display = "inline-block";
             this.updateUI();
+            this.showColorSetUpgradePrompt(spaceId);
           } else {
             this.game.log(`Oh no! The wild ${space.pokemon} broke free and fled.`);
             this.showFullPriceBuyAfterFailedWildClaim(spaceId, `Oh no! Wild ${space.pokemon} broke free and fled. You can still buy ${space.name} at full price.`);
@@ -3672,25 +3708,21 @@ class UIManager {
       if (isHumanChallenger) {
         if (won) {
           this.initiateCatchMiniGame(spaceId, (success) => {
-            const rentResult = this.game.payRent(0, spaceId, 50);
-            this.showMoneyTransfer(rentResult.rent, this.game.players[0].name, owner.name, `Battle discount rent: ${this.formatMoney(rentResult.rent)}`, this.gameContainer);
             if (success) {
               const player0 = this.game.players[0];
-              if (!player0.collection) player0.collection = [];
-              this.game.normalizeCollectionMeta(player0);
-              if (!player0.collection.includes(enemyPoke)) {
-                player0.collection.push(enemyPoke);
-                player0.collectionMeta.push(null);
-              }
+              this.game.transferPropertyOwnership(spaceId, 0);
               this.awardEvolutionPoints(this.game.players[0], playerPoke, 1, "caught a Pokémon", this.gameContainer);
               this.renderCollection();
-              this.showCenterActionToast(`Caught ${enemyPoke} and paid 50% rent!`, "money", this.gameContainer);
-              this.setDialogText(`GOTCHA! You caught ${enemyPoke} for your collection and paid discounted rent ${this.formatMoney(rentResult.rent)} to ${owner.name}. ${owner.name} keeps ${space.name}.`);
+              this.showCenterActionToast(`Caught ${enemyPoke} and claimed ${space.name}!`, "money", this.gameContainer);
+              this.setDialogText(`GOTCHA! You caught ${enemyPoke} and claimed ${space.name} from ${owner.name}!`);
               this.updateUI();
-              this.resolveDuesCheck(0, ownerIdx, () => {
+              this.showColorSetUpgradePrompt(spaceId);
+              this.resolveDuesCheck(0, null, () => {
                 this.endBtn.style.display = "inline-block";
               });
             } else {
+              const rentResult = this.game.payRent(0, spaceId, 50);
+              this.showMoneyTransfer(rentResult.rent, this.game.players[0].name, owner.name, `Battle discount rent: ${this.formatMoney(rentResult.rent)}`, this.gameContainer);
               this.setDialogText(`The Pokémon broke free and fled! You paid discount rent ${this.formatMoney(rentResult.rent)} to ${owner.name}.`);
               this.resolveDuesCheck(0, ownerIdx, () => {
                 this.updateUI();
@@ -4025,7 +4057,7 @@ class UIManager {
     const itemId = this.game.rollItemDrop(tier);
     this.game.addItem(player, itemId, 1);
     const item = BattleItems[itemId];
-    this.showCenterActionToast(`Found ${item.name}!`, "money", this.gameContainer);
+    this.showCenterActionToast(`Found ${item.name}!`, "money", this.gameContainer, 5000);
     this.setDialogText(`${won ? "Battle reward" : "Consolation drop"}: found ${item.name}.`);
     this.updateUI();
     return itemId;
@@ -4034,7 +4066,7 @@ class UIManager {
   awardEvolutionPoints(player, pokemonName, points, reason, host = this.gameContainer) {
     if (!player || player.isAI || !pokemonName || points <= 0) return;
     this.game.addEvolutionPoints(player, pokemonName, points, reason);
-    this.showCenterActionToast(`+${points} EP ${pokemonName}!`, "buff", host);
+    this.showCenterActionToast(`+${points} EP ${pokemonName}!`, "buff", host, 5000);
     this.updateUI();
   }
 

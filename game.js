@@ -3,8 +3,8 @@
  * Core state machine for player turns, board movements, real-estate, cards, trading, and mortgaging.
  */
 
-import { BoardSpaces, AcademyCards, TeraRaidCards } from './assets.js?v=39';
-import { Sound } from './sound.js?v=39';
+import { BoardSpaces, AcademyCards, TeraRaidCards } from './assets.js?v=40';
+import { Sound } from './sound.js?v=40';
 
 export const BattleItems = {
   potion: { id: "potion", name: "Potion", kind: "battle", text: "Restore 20 HP during battle.", heal: 20, rarity: "Common" },
@@ -895,6 +895,72 @@ export class GameEngine {
     Sound.playBuyCamp();
     this.recalculatePlayerStats(playerIdx);
     return true;
+  }
+
+  getGroupUpgradePlan(playerIdx, spaceId) {
+    const space = this.spaces[spaceId];
+    const player = this.players[playerIdx];
+    if (!space || !player || space.type !== "property") {
+      return { ready: false, message: "Select a property color set to upgrade.", spaces: [], totalCost: 0, kind: "" };
+    }
+    if (!this.ownsColorGroup(playerIdx, space.group)) {
+      return { ready: false, message: "Own every property in this color set first.", spaces: [], totalCost: 0, kind: "" };
+    }
+
+    const groupProperties = this.getGroupProperties(space.group);
+    const mortgagedProps = groupProperties.filter(s => this.mortgages[s.id]);
+    if (mortgagedProps.length > 0) {
+      return {
+        ready: false,
+        message: `Unmortgage ${mortgagedProps.map(s => s.name).join(", ")} before upgrading this set.`,
+        spaces: [],
+        totalCost: 0,
+        kind: ""
+      };
+    }
+
+    const counts = groupProperties.map(s => this.buildings[s.id] || 0);
+    if (counts.every(count => count === 5)) {
+      return { ready: false, message: "This color set is already fully upgraded.", spaces: [], totalCost: 0, kind: "" };
+    }
+    if (!counts.every(count => count === counts[0])) {
+      return { ready: false, message: "This color set is uneven. Use single upgrades until it is even.", spaces: [], totalCost: 0, kind: "" };
+    }
+
+    const kind = counts[0] === 4 ? "Gym Station" : "Camp";
+    const totalCost = groupProperties.reduce((sum, s) => sum + s.houseCost, 0);
+    if (player.cash < totalCost) {
+      return {
+        ready: false,
+        message: `Need $${totalCost} to upgrade all ${groupProperties.length} properties (you have $${player.cash}).`,
+        spaces: groupProperties,
+        totalCost,
+        kind
+      };
+    }
+
+    return {
+      ready: true,
+      message: `Upgrade all ${groupProperties.length} properties with one ${kind} each for $${totalCost}.`,
+      spaces: groupProperties,
+      totalCost,
+      kind
+    };
+  }
+
+  buildGroupUpgrade(playerIdx, spaceId) {
+    const plan = this.getGroupUpgradePlan(playerIdx, spaceId);
+    if (!plan.ready) return { success: false, ...plan };
+
+    const player = this.players[playerIdx];
+    player.cash -= plan.totalCost;
+    plan.spaces.forEach(space => {
+      this.buildings[space.id] = plan.kind === "Gym Station" ? 5 : (this.buildings[space.id] || 0) + 1;
+    });
+    this.log(`${player.name} upgraded ${plan.spaces.map(s => s.name).join(", ")} with ${plan.kind}s for $${plan.totalCost}.`);
+    Sound.playBuyCamp();
+    this.recalculatePlayerStats(playerIdx);
+    return { success: true, ...plan };
   }
 
   // Sell upgrades (Sell Camps/Gyms for 50% refund)

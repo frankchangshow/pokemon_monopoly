@@ -3,8 +3,8 @@
  * Handles move execution, type matchups, CPU AI, logs, Terastallization, and resolution callbacks.
  */
 
-import { PokemonDB, PokemonBattleStats } from './assets.js?v=39';
-import { Sound } from './sound.js?v=39';
+import { PokemonDB, PokemonBattleStats } from './assets.js?v=40';
+import { Sound } from './sound.js?v=40';
 
 const ALL_STATS = ["hp", "attack", "defense", "specialAttack", "specialDefense", "speed"];
 const PLAYER_MIN_MOVE_POWER = 30;
@@ -614,7 +614,7 @@ export class BattleEngine {
         this.activeBattle = null;
       }
       battle.onComplete(winnerIdx === 0);
-    }, 3000);
+    }, 7000);
   }
 
   reset() {
