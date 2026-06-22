@@ -1431,6 +1431,21 @@ class UIManager {
     });
   }
 
+  showBankruptcyColorSetUpgradePrompt(transferredSpaceIds) {
+    if (!Array.isArray(transferredSpaceIds) || transferredSpaceIds.length === 0) return;
+    const readySpaceId = transferredSpaceIds.find((spaceId) => {
+      const space = this.game.spaces[spaceId];
+      return space
+        && space.type === "property"
+        && this.game.ownership[spaceId] === 0
+        && this.game.ownsColorGroup(0, space.group)
+        && this.game.getGroupUpgradePlan(0, spaceId).ready;
+    });
+    if (readySpaceId !== undefined) {
+      this.showColorSetUpgradePrompt(readySpaceId);
+    }
+  }
+
   // Update game board visual tokens, houses, sidebar, logs
   updateUI() {
     this.removeCenterSaveLoadControls();
@@ -2432,7 +2447,7 @@ class UIManager {
 
     if (netWorth < absoluteDebt) {
       // Bankruptcy
-      this.game.declareBankruptcy(debtorIdx, creditorIdx);
+      const transferredSpaceIds = this.game.declareBankruptcy(debtorIdx, creditorIdx) || [];
       this.updateUI();
       
       // If Human goes bankrupt, game over!
@@ -2442,6 +2457,9 @@ class UIManager {
       } else {
         alert(`${player.name} went bankrupt and was eliminated!`);
         callback();
+        if (creditorIdx === 0) {
+          setTimeout(() => this.showBankruptcyColorSetUpgradePrompt(transferredSpaceIds), 0);
+        }
       }
     } else {
       // Must liquidate assets

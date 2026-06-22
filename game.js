@@ -1101,6 +1101,7 @@ export class GameEngine {
 
     const hasCreditor = creditorIdx !== undefined && creditorIdx !== null;
     const creditor = hasCreditor ? this.players[creditorIdx] : null;
+    const transferredSpaceIds = [];
 
     // Hand over all assets
     this.spaces.forEach((s) => {
@@ -1109,6 +1110,7 @@ export class GameEngine {
           this.ownership[s.id] = creditorIdx;
           this.buildings[s.id] = 0; // Buildings are demolished on bankruptcy hand-over
           this.mortgages[s.id] = false; // Creditor gets them clear or inherits mortgage? (Monopoly rule is inherit, but for gameplay simplicity we clear it)
+          transferredSpaceIds.push(s.id);
           this.log(`${creditor.name} received ownership of ${s.name}.`);
         } else {
           // Handed to bank: set back to unowned
@@ -1123,6 +1125,8 @@ export class GameEngine {
     if (hasCreditor) {
       this.recalculatePlayerStats(creditorIdx);
     }
+
+    return transferredSpaceIds;
   }
 
   getActivePlayers() {
