@@ -4737,6 +4737,7 @@ class UIManager {
     const player = this.game.players[0];
     this.game.normalizeCollectionMeta(player);
     const tradedNames = costIndices.map(idx => player.collection[idx]);
+    let celebration = null;
 
     if (target.type === "partner") {
       const oldPoke = player.pokemon;
@@ -4750,6 +4751,7 @@ class UIManager {
         this.game.recalculatePlayerStats(0);
         this.game.log(`🔄 Traded 3 Pokémon (${tradedNames.join(", ")}) to evolve partner ${oldPoke} into ${player.pokemon}!`);
         this.setDialogText(`Evolved! Partner evolved from ${oldPoke} to ${player.pokemon}!`);
+        celebration = { oldName: oldPoke, newName: player.pokemon };
       } else {
         player.pokemonBonusLevels[baseName] = (player.pokemonBonusLevels[baseName] || 0) + 2;
         this.game.recalculatePlayerStats(0);
@@ -4764,6 +4766,7 @@ class UIManager {
       }
       this.game.log(`🔄 Traded 3 Pokémon (${tradedNames.join(", ")}) to evolve ${oldName} into ${target.nextName}!`);
       this.setDialogText(`${oldName} evolved into ${target.nextName}!`);
+      celebration = { oldName, newName: target.nextName };
     }
 
     [...costIndices].sort((a, b) => b - a).forEach(idx => {
@@ -4773,6 +4776,9 @@ class UIManager {
     this.selectedCollectionIndices = [];
     this.renderCollection();
     this.updateUI();
+    if (celebration) {
+      this.showEvolutionCelebration(celebration.oldName, celebration.newName);
+    }
   }
 
   getDefaultMovesForPokemon(pokemonName) {
