@@ -2173,7 +2173,7 @@ class UIManager {
         const acceptChallengeBtn = document.createElement("button");
         acceptChallengeBtn.className = "btn-comic btn-roll btn-battle-highlight";
         acceptChallengeBtn.id = "accept-challenge-btn";
-        acceptChallengeBtn.innerText = "DEFEND";
+        acceptChallengeBtn.innerText = "DEFEND PROPERTY (Battle!)";
         this.rollBtn.parentNode.appendChild(acceptChallengeBtn);
 
         // Also provide a fallback: pay full rent without battle
@@ -2240,7 +2240,7 @@ class UIManager {
       const challengeBtn = document.createElement("button");
       challengeBtn.className = "btn-comic btn-roll btn-battle-highlight";
       challengeBtn.id = "trainer-battle-btn";
-      challengeBtn.innerText = "BATTLE";
+      challengeBtn.innerText = "CHALLENGE OWNER (50% Rent on win / 1.5x on loss)";
       this.buyBtn.parentNode.insertBefore(challengeBtn, this.buyBtn);
 
       const payBtn = document.createElement("button");
